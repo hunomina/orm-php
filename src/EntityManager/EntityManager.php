@@ -131,6 +131,7 @@ class EntityManager
      * @return bool
      * @throws DdlException
      * @throws EntityManagerException
+     * @throws EntityException
      * Check if the entity already exist in the database
      */
     private function entityAlreadyExist(Entity $entity): bool
@@ -200,6 +201,7 @@ class EntityManager
      * @param Entity $entity
      * @param PropertyDdl $property
      * @throws DdlException
+     * @throws EntityException
      * @throws EntityManagerException
      */
     private function emptyCollection(Entity $entity, PropertyDdl $property): void
