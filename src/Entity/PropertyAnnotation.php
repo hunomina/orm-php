@@ -8,7 +8,7 @@ namespace hunomina\Orm\Entity;
  */
 class PropertyAnnotation
 {
-    /** @var array $_annotations */
+    /** @var string[] $_annotations */
     private $_annotations = [];
 
     /**
@@ -54,7 +54,7 @@ class PropertyAnnotation
 
 
     /**
-     * @return array
+     * @return string[]
      */
     public function getAnnotations(): array
     {
