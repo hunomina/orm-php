@@ -74,9 +74,38 @@ abstract class PropertyDdl
      */
     protected function fetchAnnotations(): void
     {
+        $annotations = $this->_annotations->getAnnotations();
+
+        // get annotations value
+        foreach ($annotations as $annotation) {
+            if (strpos($annotation, '@Collection') === 0) {
+                $collection = $annotation;
+            }
+            if (strpos($annotation, '@DbType') === 0) {
+                $type = $annotation;
+            }
+            if (strpos($annotation, '@PrimaryKey') === 0) {
+                $primaryKey = $annotation;
+            }
+            if (strpos($annotation, '@ForeignKey') === 0) {
+                $foreignKey = $annotation;
+            }
+            if (strpos($annotation, '@NotNull') === 0) {
+                $notNull = $annotation;
+            }
+            if (strpos($annotation, '@Default') === 0) {
+                $default = $annotation;
+            }
+            if (strpos($annotation, '@Comments') === 0) {
+                $comments = $annotation;
+            }
+            if (strpos($annotation, '@AutoIncrement') === 0) {
+                $autoIncrement = $annotation;
+            }
+        }
+
         // checked first because needed later for @DbType annotation
-        $collection = $this->_annotations->getAnnotation('Collection');
-        if (\is_string($collection)) {
+        if (isset($collection)) {
             if (preg_match(self::COLLECTION_ANNOTATION_REGEXP, $collection, $match)) {
                 $match = $match[1];
                 if (class_exists($match)) {
@@ -93,9 +122,8 @@ abstract class PropertyDdl
             }
         }
 
-        $type = $this->_annotations->getAnnotation('DbType');
         if (!$this->isCollection()) {
-            if (\is_string($type)) {
+            if (isset($type)) {
                 if (preg_match(self::TYPE_ANNOTATION_REGEXP, $type, $match)) {
                     $this->_type = $match[1];
                 } else {
@@ -106,8 +134,7 @@ abstract class PropertyDdl
             }
         }
 
-        $primaryKey = $this->_annotations->getAnnotation('PrimaryKey');
-        if (\is_string($primaryKey)) {
+        if (isset($primaryKey)) {
             if (preg_match(self::PRIMARY_KEY_ANNOTATION_REGEXP, $primaryKey)) {
                 $this->_primary_key = true;
             } else {
@@ -115,8 +142,7 @@ abstract class PropertyDdl
             }
         }
 
-        $foreignKey = $this->_annotations->getAnnotation('ForeignKey');
-        if (\is_string($foreignKey)) {
+        if (isset($foreignKey)) {
             if (preg_match(self::FOREIGN_KEY_ANNOTATION_REGEXP, $foreignKey, $match)) {
                 $match = $match[1];
                 if (class_exists($match)) {
@@ -133,8 +159,7 @@ abstract class PropertyDdl
             }
         }
 
-        $notNull = $this->_annotations->getAnnotation('NotNull');
-        if (\is_string($notNull)) {
+        if (isset($notNull)) {
             if (preg_match(self::NOT_NULL_ANNOTATION_REGEXP, $notNull)) {
                 $this->_not_null = true;
             } else {
@@ -142,8 +167,7 @@ abstract class PropertyDdl
             }
         }
 
-        $default = $this->_annotations->getAnnotation('Default');
-        if (\is_string($default)) {
+        if (isset($default)) {
             if (preg_match(self::DEFAULT_ANNOTATION_REGEXP, $default, $match)) {
                 $match = $match[1];
                 if (preg_match(self::IS_INT_REGEXP, $match)) {
@@ -155,8 +179,7 @@ abstract class PropertyDdl
             }
         }
 
-        $comments = $this->_annotations->getAnnotation('Comments');
-        if (\is_string($comments)) {
+        if (isset($comments)) {
             if (preg_match(self::COMMENTS_ANNOTATION_REGEXP, $comments, $match)) {
                 $this->_comments = $match[1];
             } else {
@@ -164,8 +187,7 @@ abstract class PropertyDdl
             }
         }
 
-        $autoIncrement = $this->_annotations->getAnnotation('AutoIncrement');
-        if (\is_string($autoIncrement)) {
+        if (isset($autoIncrement)) {
             if (preg_match(self::AUTO_INCREMENT_ANNOTATION_REGEXP, $autoIncrement)) {
                 $this->_auto_increment = true;
             } else {
