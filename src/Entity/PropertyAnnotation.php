@@ -43,7 +43,7 @@ class PropertyAnnotation
                 $explodeDoc[$i] = rtrim($explodeDoc[$i], '/');
             }
 
-            $explodeDoc[$i] = trim($explodeDoc[$i], '* \t\n\r\0\x0B'); // basic trim + *
+            $explodeDoc[$i] = trim($explodeDoc[$i], "* \t\n\r\0\x0B"); // basic trim + *
 
             if (strpos($explodeDoc[$i], '@') === 0) {
                 $this->_annotations[] = $explodeDoc[$i];
