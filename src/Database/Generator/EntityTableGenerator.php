@@ -5,6 +5,7 @@ namespace hunomina\Orm\Database\Generator;
 use hunomina\Orm\Database\Ddl\DdlException;
 use hunomina\Orm\Database\Ddl\EntityDdlFactory;
 use hunomina\Orm\Entity\Entity;
+use hunomina\Orm\Entity\EntityException;
 use PDO;
 
 class EntityTableGenerator
@@ -35,6 +36,7 @@ class EntityTableGenerator
      * @return bool
      * @throws DdlException
      * @throws GeneratorException
+     * @throws EntityException
      */
     public function generateEntityTable(string $entity): bool
     {
