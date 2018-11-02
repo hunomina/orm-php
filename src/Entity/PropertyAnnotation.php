@@ -30,15 +30,23 @@ class PropertyAnnotation
     {
         $explodeDoc = explode("\n", $doc);
 
-        foreach ($explodeDoc as &$row) {
-            $row = trim($row);
-            $row = ltrim($row, '/*');
-            $row = rtrim($row, '*/');
-            $row = trim($row, '*');
-            $row = trim($row);
+        $countRow = \count($explodeDoc);
+        for ($i = 0; $i < $countRow; $i++) {
 
-            if (strpos($row, '@') === 0) {
-                $this->_annotations[] = $row;
+            $explodeDoc[$i] = trim($explodeDoc[$i]);
+
+            if ($i === 0) { // first doc line : doc start with /*
+                $explodeDoc[$i] = ltrim($explodeDoc[$i], '/');
+            }
+
+            if ($i === $countRow - 1) { // last doc line : doc end with */
+                $explodeDoc[$i] = rtrim($explodeDoc[$i], '/');
+            }
+
+            $explodeDoc[$i] = trim($explodeDoc[$i], '* \t\n\r\0\x0B'); // basic trim + *
+
+            if (strpos($explodeDoc[$i], '@') === 0) {
+                $this->_annotations[] = $explodeDoc[$i];
             }
         }
         unset($row);
