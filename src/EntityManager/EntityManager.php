@@ -3,12 +3,10 @@
 namespace hunomina\Orm\EntityManager;
 
 use hunomina\Orm\Database\Ddl\DdlException;
-use hunomina\Orm\Database\Ddl\EntityDdl;
-use hunomina\Orm\Database\Ddl\MySql\MySqlEntityDdl;
+use hunomina\Orm\Database\Ddl\EntityDdlFactory;
 use hunomina\Orm\Database\Ddl\PropertyDdl;
 use hunomina\Orm\Entity\Entity;
 use hunomina\Orm\Entity\EntityException;
-use hunomina\Orm\Entity\EntityReflexion;
 use PDO;
 use PDOException;
 use SplObjectStorage;
@@ -45,24 +43,6 @@ class EntityManager
         $this->_type = $type;
         $this->_add = new SplObjectStorage();
         $this->_delete = new SplObjectStorage();
-    }
-
-    /**
-     * @param string $entity
-     * @return EntityDdl|null
-     * @throws DdlException
-     * @throws EntityException
-     */
-    private function getEntityDdl(string $entity): ?EntityDdl
-    {
-        $entityReflexion = new EntityReflexion($entity);
-        switch ($this->_type) {
-            case 'mysql':
-                return new MySqlEntityDdl($entityReflexion);
-                break;
-        }
-
-        return null;
     }
 
     /**
@@ -131,7 +111,7 @@ class EntityManager
 
         foreach ($this->_delete as $entity) {
             if ($entity instanceof Entity) {
-                $entityDdl = $this->getEntityDdl(\get_class($entity));
+                $entityDdl = EntityDdlFactory::get(\get_class($entity), $this->_type);
                 $statement = $this->_pdo->prepare($entityDdl->deleteEntityDdl());
                 $statement->bindParam(':id', $entity->id, PDO::PARAM_INT);
                 try {
@@ -150,28 +130,24 @@ class EntityManager
      * @param Entity $entity
      * @return bool
      * @throws DdlException
-     * @throws EntityException
      * @throws EntityManagerException
      * Check if the entity already exist in the database
      */
     private function entityAlreadyExist(Entity $entity): bool
     {
         if ($entity->id !== null) {
-            $entityDdl = $this->getEntityDdl(\get_class($entity));
-            if ($entityDdl instanceof EntityDdl) {
+            $entityDdl = EntityDdlFactory::get(\get_class($entity), $this->_type);
 
-                $statement = $this->_pdo->prepare($entityDdl->doesEntityExistDdl());
-                $statement->bindParam(':id', $entity->id, \PDO::PARAM_INT);
+            $statement = $this->_pdo->prepare($entityDdl->doesEntityExistDdl());
+            $statement->bindParam(':id', $entity->id, \PDO::PARAM_INT);
 
-                try {
-                    $statement->execute();
-                } catch (PDOException $e) {
-                    throw new EntityManagerException($e->getMessage());
-                }
-
-                return $entityDdl->doesEntityExistFromStatement($statement);
+            try {
+                $statement->execute();
+            } catch (PDOException $e) {
+                throw new EntityManagerException($e->getMessage());
             }
-            throw new EntityManagerException('Invalid entity class');
+
+            return $entityDdl->doesEntityExistFromStatement($statement);
         }
 
         return false;
@@ -186,42 +162,37 @@ class EntityManager
      */
     private function saveCollections(Entity $entity, array $collections): void
     {
-        $entityDdl = $this->getEntityDdl(\get_class($entity));
-        if ($entityDdl instanceof EntityDdl) {
+        $entityDdl = EntityDdlFactory::get(\get_class($entity), $this->_type);
+        foreach ($collections as $property) { // foreach collection property
 
-            foreach ($collections as $property) { // foreach collection property
+            if ($property->isCollection()) {
 
-                if ($property->isCollection()) {
+                $this->emptyCollection($entity, $property);
+                $items = $entity->{$property->getName()};
+                $statement = null;
 
-                    $this->emptyCollection($entity, $property);
-                    $items = $entity->{$property->getName()};
-                    $statement = null;
+                foreach ($items as $item) { // foreach item of the collection
+                    if ($item instanceof Entity) {
 
-                    foreach ($items as $item) { // foreach item of the collection
-                        if ($item instanceof Entity) {
+                        if (!($statement instanceof \PDOStatement)) {
+                            $statement = $this->_pdo->prepare($entityDdl->addCollectionItemDdl($entity, $property, $item)); // assuming that the type of $item does not change in this foreach
+                        }
 
-                            if (!($statement instanceof \PDOStatement)) {
-                                $statement = $this->_pdo->prepare($entityDdl->addCollectionItemDdl($entity, $property, $item)); // assuming that the type of $item does not change in this foreach
-                            }
+                        $this->addEntity($item); // need to store the child entity first
 
-                            $this->addEntity($item); // need to store the child entity first
+                        $statement->bindParam(':first_collection_item_id', $entity->id, PDO::PARAM_INT);
+                        $statement->bindParam(':second_collection_item_id', $item->id, PDO::PARAM_INT);
 
-                            $statement->bindParam(':first_collection_item_id', $entity->id, PDO::PARAM_INT);
-                            $statement->bindParam(':second_collection_item_id', $item->id, PDO::PARAM_INT);
-
-                            try {
-                                $statement->execute();
-                            } catch (PDOException $e) {
-                                throw new EntityManagerException($e->getMessage());
-                            }
+                        try {
+                            $statement->execute();
+                        } catch (PDOException $e) {
+                            throw new EntityManagerException($e->getMessage());
                         }
                     }
-                } else {
-                    throw new EntityManagerException('The `' . $property->getName() . '` of the `' . \get_class($entity) . '` is not a collection');
                 }
+            } else {
+                throw new EntityManagerException('The `' . $property->getName() . '` of the `' . \get_class($entity) . '` is not a collection');
             }
-        } else {
-            throw new EntityManagerException('Invalid entity class');
         }
     }
 
@@ -229,28 +200,22 @@ class EntityManager
      * @param Entity $entity
      * @param PropertyDdl $property
      * @throws DdlException
-     * @throws EntityException
      * @throws EntityManagerException
      */
     private function emptyCollection(Entity $entity, PropertyDdl $property): void
     {
-        $entityDdl = $this->getEntityDdl(\get_class($entity));
-        if ($entityDdl instanceof EntityDdl) {
+        $entityDdl = EntityDdlFactory::get(\get_class($entity), $this->_type);
+        if ($property->isCollection()) {
 
-            if ($property->isCollection()) {
-
-                $statement = $this->_pdo->prepare($entityDdl->emptyCollectionDdl($entity, $property));
-                $statement->bindParam(':entity_id', $entity->id, PDO::PARAM_INT);
-                try {
-                    $statement->execute();
-                } catch (PDOException $e) {
-                    throw new EntityManagerException($e->getMessage());
-                }
-            } else {
-                throw new EntityManagerException('The `' . $property->getName() . '` of the `' . \get_class($entity) . '` is not a collection');
+            $statement = $this->_pdo->prepare($entityDdl->emptyCollectionDdl($entity, $property));
+            $statement->bindParam(':entity_id', $entity->id, PDO::PARAM_INT);
+            try {
+                $statement->execute();
+            } catch (PDOException $e) {
+                throw new EntityManagerException($e->getMessage());
             }
         } else {
-            throw new EntityManagerException('Invalid entity class');
+            throw new EntityManagerException('The `' . $property->getName() . '` of the `' . \get_class($entity) . '` is not a collection');
         }
     }
 
@@ -263,57 +228,53 @@ class EntityManager
      */
     private function addEntity(Entity $entity): Entity
     {
-        $entityDdl = $this->getEntityDdl(\get_class($entity));
-        if ($entityDdl instanceof EntityDdl) {
+        $entityDdl = EntityDdlFactory::get(\get_class($entity), $this->_type);
 
-            $create = false;
-            if ($this->entityAlreadyExist($entity)) {
-                $ddl = $entityDdl->updateEntityDdl();
-            } else {
-                $ddl = $entityDdl->insertEntityDdl();
-                $create = true;
-            }
-
-            $p = $entityDdl->getPropertiesDdl();
-            $properties = [];
-            $collectionProperties = [];
-
-            foreach ($p as $property) {
-
-                $name = $property->getName();
-                if ($property->isForeignKey()) {
-                    $value = (int)$this->addEntity($property->getValue($entity))->id;
-                } elseif ($property->isCollection()) {
-                    $collectionProperties[] = $property;
-                    continue;
-                } else {
-                    $value = $property->getValue($entity);
-                }
-                $properties[$name] = $value;
-            }
-
-            $statement = $this->_pdo->prepare($ddl);
-            foreach ($properties as $name => &$value) {
-                $name = ':' . $name;
-                $statement->bindParam($name, $value);
-            }
-            unset($value);
-
-            try {
-                $statement->execute();
-            } catch (PDOException $e) {
-                throw new EntityManagerException($e->getMessage());
-            }
-
-            if ($create) {
-                $entity->id = (int)$this->_pdo->lastInsertId();
-            }
-
-            // collection need to be store after or the mother entity for foreign key to work
-            $this->saveCollections($entity, $collectionProperties);
+        $create = false;
+        if ($this->entityAlreadyExist($entity)) {
+            $ddl = $entityDdl->updateEntityDdl();
         } else {
-            throw new EntityManagerException('Invalid entity class');
+            $ddl = $entityDdl->insertEntityDdl();
+            $create = true;
         }
+
+        $p = $entityDdl->getPropertiesDdl();
+        $properties = [];
+        $collectionProperties = [];
+
+        foreach ($p as $property) {
+
+            $name = $property->getName();
+            if ($property->isForeignKey()) {
+                $value = (int)$this->addEntity($property->getValue($entity))->id;
+            } elseif ($property->isCollection()) {
+                $collectionProperties[] = $property;
+                continue;
+            } else {
+                $value = $property->getValue($entity);
+            }
+            $properties[$name] = $value;
+        }
+
+        $statement = $this->_pdo->prepare($ddl);
+        foreach ($properties as $name => &$value) {
+            $name = ':' . $name;
+            $statement->bindParam($name, $value);
+        }
+        unset($value);
+
+        try {
+            $statement->execute();
+        } catch (PDOException $e) {
+            throw new EntityManagerException($e->getMessage());
+        }
+
+        if ($create) {
+            $entity->id = (int)$this->_pdo->lastInsertId();
+        }
+
+        // collection need to be store after or the mother entity for foreign key to work
+        $this->saveCollections($entity, $collectionProperties);
 
         return $entity;
     }
