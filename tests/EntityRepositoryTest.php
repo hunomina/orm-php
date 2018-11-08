@@ -111,7 +111,6 @@ class EntityRepositoryTest extends \PHPUnit\Framework\TestCase
     {
         $teamRepo = new TeamRepository($this->_pdo, 'mysql');
         $teams = $teamRepo->findAll();
-        var_dump($teams);
         $this->assertContainsOnlyInstancesOf(Team::class, $teams);
         /** @var Team $team */
         foreach ($teams as $team) {
