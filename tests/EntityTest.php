@@ -36,7 +36,7 @@ class EntityTest extends \PHPUnit\Framework\TestCase
     /**
      * @throws EntityException
      */
-    public function testInstanciation(): void
+    public function estInstanciation(): void
     {
         $reflexion = new EntityReflexion(User::class);
         $properties = $reflexion->getProperties();
@@ -53,7 +53,7 @@ class EntityTest extends \PHPUnit\Framework\TestCase
      * @throws EntityException
      * @throws DdlException
      */
-    public function testCreateDdl(): void
+    public function estCreateDdl(): void
     {
         $ddl = new MySqlEntityDdl(new EntityReflexion(User::class));
         $this->assertIsString($ddl->createTableDdl());
@@ -86,7 +86,7 @@ class EntityTest extends \PHPUnit\Framework\TestCase
      * @throws EntityException
      * @throws EntityManagerException
      */
-    public function testInsertUpdateDelete(): void
+    public function estInsertUpdateDelete(): void
     {
         $ddl = new MySqlEntityDdl(new EntityReflexion(User::class));
         $this->assertIsString($ddl->insertEntityDdl());
