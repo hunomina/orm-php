@@ -33,7 +33,7 @@ class EntityTableGenerator
 
     /**
      * @param string $entity
-     * @return bool
+     * @return bool on success
      * @throws DdlException
      * @throws GeneratorException
      * @throws EntityException
