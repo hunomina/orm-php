@@ -3,6 +3,9 @@
 use hunomina\Orm\Database\Ddl\DdlException;
 use hunomina\Orm\Database\Ddl\MySql\MySqlEntityDdl;
 use hunomina\Orm\Database\Generator\EntityTableGenerator;
+use hunomina\Orm\Database\QueryBuilder\MySql\MySqlQueryBuilder;
+use hunomina\Orm\Database\QueryBuilder\QueryBuilderException;
+use hunomina\Orm\Database\QueryBuilder\QueryBuilderFactory;
 use hunomina\Orm\Entity\EntityException;
 use hunomina\Orm\Entity\EntityReflexion;
 use hunomina\Orm\Entity\PropertyAnnotation;
@@ -16,6 +19,20 @@ require_once __DIR__ . '/Entities/Team.php';
 
 class EntityTest extends \PHPUnit\Framework\TestCase
 {
+    /** @var PDO $_pdo */
+    private $_pdo;
+
+    public function __construct(?string $name = null, array $data = [], string $dataName = '')
+    {
+        parent::__construct($name, $data, $dataName);
+        $this->_pdo = new PDO('mysql:host=localhost;dbname=test', 'root', 'root');
+    }
+
+    public function __destruct()
+    {
+        $this->_pdo = null;
+    }
+
     /**
      * @throws EntityException
      */
@@ -55,10 +72,9 @@ class EntityTest extends \PHPUnit\Framework\TestCase
      * @throws EntityException
      * @throws \hunomina\Orm\Database\Generator\GeneratorException
      */
-    public function testGenerator(): void
+    public function estGenerator(): void
     {
-        $pdo = new PDO('mysql:host=localhost;dbname=test', 'root', 'root');
-        $generator = new EntityTableGenerator($pdo, 'mysql');
+        $generator = new EntityTableGenerator($this->_pdo, 'mysql');
 
         $this->assertTrue($generator->generateEntityTable(User::class));
         $this->assertTrue($generator->generateEntityTable(Car::class));
@@ -97,8 +113,65 @@ class EntityTest extends \PHPUnit\Framework\TestCase
         $team->name = 'local';
         $team->members = [$user1, $user2];
 
-        $pdo = new PDO('mysql:host=localhost;dbname=test', 'root', 'root');
-        $em = new EntityManager($pdo);
+        $em = new EntityManager($this->_pdo);
         $em->persist($user1)->persist($user2)->persist($car)->persist($team)->flush();
+    }
+
+    /**
+     * @throws QueryBuilderException
+     */
+    public function testQueryBuilder(): void
+    {
+        /** @var MySqlQueryBuilder $builder */
+        $builder = QueryBuilderFactory::get('user', 'mysql');
+        $this->assertInstanceOf(MySqlQueryBuilder::class, $builder);
+
+        $updateQuery = $builder->update()
+            ->addSet('name', ':name')
+            ->addSet('pseudo', ':pseudo')
+            ->addOrderBy('`name` DESC')
+            ->setLimit(10)
+            ->setOffset(2)
+            ->where('`city` = :city')
+            ->execute();
+
+        $this->assertIsString($updateQuery);
+
+        $selectQuery = $builder->select(['COUNT(*) as count'])
+            ->addOrderBy('name DESC')
+            ->addOrderBy('id DESC')
+            ->addGroupBy('id')
+            ->setLimit(10)
+            ->setOffset(10)
+            ->where('city = :city')
+            ->where('country = :country')
+            ->execute();
+
+        $this->assertIsString($selectQuery);
+
+        $deleteQuery = $builder->delete()
+            ->addOrderBy('id DESC')
+            ->addOrderBy('name DESC')
+            ->setLimit(5)
+            ->where('name LIKE :name')
+            ->where('city = :city')
+            ->execute();
+
+        $this->assertIsString($deleteQuery);
+
+        $insertQuery = $builder->insert()
+            ->setColumn('age', 10)
+            ->setColumn('city', ':city')
+            ->setColumn('country', 'France')
+            ->setColumn('valid', true)
+            ->setColumn('car', null)
+            ->execute();
+
+        $this->assertIsString($insertQuery);
+
+        print "\nSelect Query : " . $selectQuery . "\n";
+        print "\nUpdate Query : " . $updateQuery . "\n";
+        print "\nInsert Query : " . $insertQuery . "\n";
+        print "\nDelete Query : " . $deleteQuery . "\n";
     }
 }
