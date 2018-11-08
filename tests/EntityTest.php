@@ -36,7 +36,7 @@ class EntityTest extends \PHPUnit\Framework\TestCase
     /**
      * @throws EntityException
      */
-    public function estInstanciation(): void
+    public function testInstanciation(): void
     {
         $reflexion = new EntityReflexion(User::class);
         $properties = $reflexion->getProperties();
@@ -53,7 +53,7 @@ class EntityTest extends \PHPUnit\Framework\TestCase
      * @throws EntityException
      * @throws DdlException
      */
-    public function estCreateDdl(): void
+    public function testCreateDdl(): void
     {
         $ddl = new MySqlEntityDdl(new EntityReflexion(User::class));
         $this->assertIsString($ddl->createTableDdl());
@@ -72,7 +72,7 @@ class EntityTest extends \PHPUnit\Framework\TestCase
      * @throws EntityException
      * @throws \hunomina\Orm\Database\Generator\GeneratorException
      */
-    public function estGenerator(): void
+    public function testGenerator(): void
     {
         $generator = new EntityTableGenerator($this->_pdo, 'mysql');
 
@@ -86,7 +86,7 @@ class EntityTest extends \PHPUnit\Framework\TestCase
      * @throws EntityException
      * @throws EntityManagerException
      */
-    public function estInsertUpdateDelete(): void
+    public function testInsertUpdateDelete(): void
     {
         $ddl = new MySqlEntityDdl(new EntityReflexion(User::class));
         $this->assertIsString($ddl->insertEntityDdl());
