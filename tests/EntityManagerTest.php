@@ -6,11 +6,11 @@ use hunomina\Orm\Entity\EntityException;
 use hunomina\Orm\Entity\EntityReflexion;
 use hunomina\Orm\EntityManager\EntityManager;
 use hunomina\Orm\EntityManager\EntityManagerException;
+use hunomina\Orm\Tests\Entity\Car;
+use hunomina\Orm\Tests\Entity\Team;
+use hunomina\Orm\Tests\Entity\User;
 
 require_once __DIR__ . '/../vendor/autoload.php';
-require_once __DIR__ . '/Entities/User.php';
-require_once __DIR__ . '/Entities/Car.php';
-require_once __DIR__ . '/Entities/Team.php';
 
 class EntityManagerTest extends \PHPUnit\Framework\TestCase
 {

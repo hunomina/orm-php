@@ -4,11 +4,11 @@ use hunomina\Orm\Database\Ddl\DdlException;
 use hunomina\Orm\Database\Generator\EntityTableGenerator;
 use hunomina\Orm\Database\Generator\GeneratorException;
 use hunomina\Orm\Entity\EntityException;
+use hunomina\Orm\Tests\Entity\Car;
+use hunomina\Orm\Tests\Entity\Team;
+use hunomina\Orm\Tests\Entity\User;
 
 require_once __DIR__ . '/../vendor/autoload.php';
-require_once __DIR__ . '/Entities/User.php';
-require_once __DIR__ . '/Entities/Car.php';
-require_once __DIR__ . '/Entities/Team.php';
 
 class TableGeneratorTest extends \PHPUnit\Framework\TestCase
 {

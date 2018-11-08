@@ -2,11 +2,11 @@
 
 use hunomina\Orm\Database\Ddl\MySql\MySqlEntityDdl;
 use hunomina\Orm\Entity\EntityReflexion;
+use hunomina\Orm\Tests\Entity\Car;
+use hunomina\Orm\Tests\Entity\Team;
+use hunomina\Orm\Tests\Entity\User;
 
 require_once __DIR__ . '/../vendor/autoload.php';
-require_once __DIR__ . '/Entities/User.php';
-require_once __DIR__ . '/Entities/Car.php';
-require_once __DIR__ . '/Entities/Team.php';
 
 class DdlGenerationTest extends \PHPUnit\Framework\TestCase
 {
