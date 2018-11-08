@@ -10,9 +10,10 @@ abstract class DdlBuilder
     /** @var string[] $_where */
     protected $_where = [];
 
-    public function setTable(string $table): void
+    public function setTable(string $table): DdlBuilder
     {
         $this->_table = $table;
+        return $this;
     }
 
     public function where(string $condition): DdlBuilder
