@@ -7,23 +7,23 @@ use hunomina\Orm\Entity\PropertyAnnotation;
 
 abstract class PropertyDdl
 {
-    private const TYPE_ANNOTATION_REGEXP = '/^@DbType ([a-zA-Z_()\d]+)$/';
+    public const TYPE_ANNOTATION_REGEXP = '/^@DbType ([a-zA-Z_()\d]+)$/';
 
-    private const PRIMARY_KEY_ANNOTATION_REGEXP = '/^@PrimaryKey$/';
+    public const PRIMARY_KEY_ANNOTATION_REGEXP = '/^@PrimaryKey$/';
 
-    private const FOREIGN_KEY_ANNOTATION_REGEXP = '/^@ForeignKey ([a-zA-Z\d\\_]+)$/';
+    public const FOREIGN_KEY_ANNOTATION_REGEXP = '/^@ForeignKey ([a-zA-Z\d\\\_]+)$/';
 
-    private const COLLECTION_ANNOTATION_REGEXP = '/^@Collection ([a-zA-Z\d\\_]+)$/';
+    public const COLLECTION_ANNOTATION_REGEXP = '/^@Collection ([a-zA-Z\d\\\_]+)$/';
 
-    private const NOT_NULL_ANNOTATION_REGEXP = '/^@NotNull$/';
+    public const NOT_NULL_ANNOTATION_REGEXP = '/^@NotNull$/';
 
-    private const AUTO_INCREMENT_ANNOTATION_REGEXP = '/^@AutoIncrement$/';
+    public const AUTO_INCREMENT_ANNOTATION_REGEXP = '/^@AutoIncrement$/';
 
-    private const DEFAULT_ANNOTATION_REGEXP = '/^@Default ([\S ]+)/';
+    public const DEFAULT_ANNOTATION_REGEXP = '/^@Default ([\S ]+)/';
 
-    private const COMMENTS_ANNOTATION_REGEXP = '/^@Comments ([\S ]+)$/';
+    public const COMMENTS_ANNOTATION_REGEXP = '/^@Comments ([\S ]+)$/';
 
-    private const IS_INT_REGEXP = '/^\d+$/';
+    public const IS_INT_REGEXP = '/^\d+$/';
 
     /** @var string $_name */
     protected $_name;
