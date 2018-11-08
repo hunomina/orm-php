@@ -21,7 +21,10 @@
     "psr-4": {
       "hunomina\\Orm\\Entity\\": "src/Entity/",
       "hunomina\\Orm\\Database\\": "src/Database",
-      "hunomina\\Orm\\EntityManager\\": "src/EntityManager"
+      "hunomina\\Orm\\EntityManager\\": "src/EntityManager",
+      "hunomina\\Orm\\EntityRepository\\": "src/EntityRepository",
+      "hunomina\\Orm\\Tests\\Entity\\": "tests/Entity",
+      "hunomina\\Orm\\Tests\\Repository\\": "tests/Repository"
     }
   }
 }

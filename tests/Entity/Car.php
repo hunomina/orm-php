@@ -1,5 +1,7 @@
 <?php
 
+namespace hunomina\Orm\Tests\Entity;
+
 use hunomina\Orm\Entity\Entity;
 
 class Car extends Entity
@@ -23,7 +25,7 @@ class Car extends Entity
      * @var User $owner
      * @DbType int(11)
      * @NotNull
-     * @ForeignKey User
+     * @ForeignKey hunomina\Orm\Tests\Entity\User
      */
     public $owner;
 

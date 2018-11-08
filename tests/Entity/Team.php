@@ -1,5 +1,7 @@
 <?php
 
+namespace hunomina\Orm\Tests\Entity;
+
 use hunomina\Orm\Entity\Entity;
 
 class Team extends Entity
@@ -18,7 +20,7 @@ class Team extends Entity
 
     /**
      * @var User[] $members
-     * @Collection User
+     * @Collection hunomina\Orm\Tests\Entity\User
      */
     public $members;
 }
