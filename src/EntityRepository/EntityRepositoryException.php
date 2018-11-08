@@ -1,6 +1,6 @@
 <?php
 
-namespace hunomina\EntityRepository;
+namespace hunomina\Orm\EntityRepository;
 
 class EntityRepositoryException extends \Exception
 {
