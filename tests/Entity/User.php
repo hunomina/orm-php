@@ -1,5 +1,7 @@
 <?php
 
+namespace hunomina\Orm\Tests\Entity;
+
 use hunomina\Orm\Entity\Entity;
 
 class User extends Entity
