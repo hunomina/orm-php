@@ -2,6 +2,7 @@
 
 namespace hunomina\Orm\EntityRepository;
 
+use hunomina\Orm\Database\QueryBuilder\QueryBuilder;
 use hunomina\Orm\Database\QueryBuilder\QueryBuilderException;
 use hunomina\Orm\Database\QueryBuilder\QueryBuilderFactory;
 use hunomina\Orm\Database\Statement\StatementException;
@@ -25,10 +26,15 @@ abstract class EntityRepository
      */
     protected $_statement_formatter;
 
+    /** @var QueryBuilder $_query_builder */
+    protected $_query_builder;
+
     /**
      * EntityRepository constructor.
      * @param PDO $pdo
      * @param string $type
+     * @throws EntityRepositoryException
+     * @throws QueryBuilderException
      */
     public function __construct(PDO $pdo, string $type = 'mysql')
     {
@@ -36,6 +42,7 @@ abstract class EntityRepository
         $this->_pdo = $pdo;
         $this->_type = $type;
         $this->_statement_formatter = new StatementFormatter();
+        $this->_query_builder = QueryBuilderFactory::get($this->getEntityTable(), $type);
     }
 
     /**
@@ -49,8 +56,7 @@ abstract class EntityRepository
      */
     public function find(int $id, bool $load = true): ?Entity
     {
-        $queryBuilder = QueryBuilderFactory::get($this->getEntityTable(), $this->_type);
-        $query = $queryBuilder->select()->where('id = :id')->execute();
+        $query = $this->_query_builder->select()->where('id = :id')->execute();
         $statement = $this->_pdo->prepare($query);
         $statement->bindParam(':id', $id, PDO::PARAM_INT);
         $statement->execute();
@@ -77,13 +83,12 @@ abstract class EntityRepository
      */
     public function findAll(bool $load = true): array
     {
-        $queryBuilder = QueryBuilderFactory::get($this->getEntityTable(), $this->_type);
-        $query = $queryBuilder->select()->execute();
+        $query = $this->_query_builder->select()->execute();
         $statement = $this->_pdo->query($query);
         $results = $this->_statement_formatter->format($statement)->fetchObject($this->getEntityClass());
         if ($load) {
-            foreach ($results as $result) {
-                $this->load($result);
+            foreach ($results as $entity) {
+                $this->load($entity);
             }
         }
         return $results;
@@ -133,12 +138,10 @@ abstract class EntityRepository
         $reflexion = new EntityReflexion(\get_class($entity));
         $foreignKeys = $reflexion->getForeignKeys();
 
-        $builder = QueryBuilderFactory::get($this->getEntityTable(), $this->_type);
-
         /** @var Entity $class */
         foreach ($foreignKeys as $property => $class) {
 
-            $query = $builder->select()->where('id = :id')->setTable($class::getTable());
+            $query = $this->_query_builder->select()->where('id = :id')->setTable($class::getTable());
             $statement = $this->_pdo->prepare($query->execute());
             $statement->bindParam(':id', $entity->{$property}, PDO::PARAM_INT);
             $statement->execute();
@@ -158,7 +161,6 @@ abstract class EntityRepository
     /**
      * @param Entity $entity
      * @throws EntityException
-     * @throws EntityRepositoryException
      * @throws QueryBuilderException
      * @throws StatementException
      */
@@ -167,12 +169,10 @@ abstract class EntityRepository
         $reflexion = new EntityReflexion(\get_class($entity));
         $collections = $reflexion->getCollections();
 
-        $builder = QueryBuilderFactory::get($this->getEntityTable(), $this->_type);
-
         /** @var Entity $class */
         foreach ($collections as $property => $class) {
 
-            $query = $builder->select()
+            $query = $this->_query_builder->select()
                 ->where($entity::getTable() . ' = :' . $entity::getTable())
                 ->setTable($entity::getTable() . '_' . $property)
                 ->execute();
@@ -191,7 +191,7 @@ abstract class EntityRepository
                 }
             }
 
-            $query = $builder->select()
+            $query = $this->_query_builder->select()
                 ->where('id IN (' . implode(', ', $collectionIds) . ')')
                 ->setTable($class::getTable())
                 ->execute();
