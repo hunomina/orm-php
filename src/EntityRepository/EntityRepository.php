@@ -57,12 +57,16 @@ abstract class EntityRepository
     public function find(int $id, bool $load = true): ?Entity
     {
         $query = $this->_query_builder->select()->where('id = :id')->execute();
-        $statement = $this->_pdo->prepare($query);
-        $statement->bindParam(':id', $id, PDO::PARAM_INT);
-        $statement->execute();
+
+        try {
+            $statement = $this->_pdo->prepare($query);
+            $statement->bindParam(':id', $id, PDO::PARAM_INT);
+            $statement->execute();
+        } catch (\PDOException $e) {
+            throw new EntityRepositoryException($e->getMessage());
+        }
 
         $results = $this->_statement_formatter->format($statement)->fetchObject($this->getEntityClass());
-
         if (\count($results) > 0) {
             $entity = $results[0];
             if ($load) {
@@ -84,7 +88,13 @@ abstract class EntityRepository
     public function findAll(bool $load = true): array
     {
         $query = $this->_query_builder->select()->execute();
-        $statement = $this->_pdo->query($query);
+
+        try {
+            $statement = $this->_pdo->query($query);
+        } catch (\PDOException $e) {
+            throw new EntityRepositoryException($e->getMessage());
+        }
+
         $results = $this->_statement_formatter->format($statement)->fetchObject($this->getEntityClass());
         if ($load) {
             foreach ($results as $entity) {
@@ -142,9 +152,14 @@ abstract class EntityRepository
         foreach ($foreignKeys as $property => $class) {
 
             $query = $this->_query_builder->select()->where('id = :id')->setTable($class::getTable());
-            $statement = $this->_pdo->prepare($query->execute());
-            $statement->bindParam(':id', $entity->{$property}, PDO::PARAM_INT);
-            $statement->execute();
+
+            try {
+                $statement = $this->_pdo->prepare($query->execute());
+                $statement->bindParam(':id', $entity->{$property}, PDO::PARAM_INT);
+                $statement->execute();
+            } catch (\PDOException $e) {
+                throw new EntityRepositoryException($e->getMessage());
+            }
 
             $results = $this->_statement_formatter->format($statement)->fetchObject($class);
             if (\count($results) > 0) {
@@ -161,6 +176,7 @@ abstract class EntityRepository
     /**
      * @param Entity $entity
      * @throws EntityException
+     * @throws EntityRepositoryException
      * @throws QueryBuilderException
      * @throws StatementException
      */
@@ -177,9 +193,13 @@ abstract class EntityRepository
                 ->setTable($entity::getTable() . '_' . $property)
                 ->execute();
 
-            $statement = $this->_pdo->prepare($query);
-            $statement->bindParam(':' . $entity::getTable(), $entity->id, PDO::PARAM_INT);
-            $statement->execute();
+            try {
+                $statement = $this->_pdo->prepare($query);
+                $statement->bindParam(':' . $entity::getTable(), $entity->id, PDO::PARAM_INT);
+                $statement->execute();
+            } catch (\PDOException $e) {
+                throw new EntityRepositoryException($e->getMessage());
+            }
 
             $results = $this->_statement_formatter->format($statement)->fetchAssoc();
 
@@ -196,7 +216,12 @@ abstract class EntityRepository
                 ->setTable($class::getTable())
                 ->execute();
 
-            $statement = $this->_pdo->query($query);
+            try {
+                $statement = $this->_pdo->query($query);
+            } catch (\PDOException $e) {
+                throw new EntityRepositoryException($e->getMessage());
+            }
+
             $results = $this->_statement_formatter->format($statement)->fetchObject($class);
             $entity->{$property} = $results;
         }
