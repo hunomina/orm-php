@@ -27,8 +27,6 @@ class QueryBuilderTest extends \PHPUnit\Framework\TestCase
             ->execute();
 
         $this->assertIsString($selectQuery);
-
-        print "\nSelect Query : " . $selectQuery . "\n";
     }
 
     /**
@@ -48,8 +46,6 @@ class QueryBuilderTest extends \PHPUnit\Framework\TestCase
             ->execute();
 
         $this->assertIsString($insertQuery);
-
-        print "\nInsert Query : " . $insertQuery . "\n";
     }
 
     /**
@@ -70,8 +66,6 @@ class QueryBuilderTest extends \PHPUnit\Framework\TestCase
             ->execute();
 
         $this->assertIsString($updateQuery);
-
-        print "\nUpdate Query : " . $updateQuery . "\n";
     }
 
     /**
@@ -91,7 +85,5 @@ class QueryBuilderTest extends \PHPUnit\Framework\TestCase
             ->execute();
 
         $this->assertIsString($deleteQuery);
-
-        print "\nDelete Query : " . $deleteQuery . "\n";
     }
 }
