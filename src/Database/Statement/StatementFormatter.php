@@ -28,7 +28,7 @@ class StatementFormatter
         if ($this->_statement instanceof PDOStatement) {
             return $this->_statement->fetchAll(PDO::FETCH_ASSOC);
         }
-        throw new StatementException('You didn\'t passed a valid statement to format');
+        throw new StatementException('You did not passed a valid statement to format');
     }
 
     /**
@@ -40,7 +40,7 @@ class StatementFormatter
         if ($this->_statement instanceof PDOStatement) {
             return $this->_statement->fetchAll(PDO::FETCH_BOTH);
         }
-        throw new StatementException('You didn\'t passed a valid statement to format');
+        throw new StatementException('You did not passed a valid statement to format');
     }
 
     /**
@@ -52,7 +52,7 @@ class StatementFormatter
         if ($this->_statement instanceof PDOStatement) {
             return $this->_statement->fetchAll(PDO::FETCH_NAMED);
         }
-        throw new StatementException('You didn\'t passed a valid statement to format');
+        throw new StatementException('You did not passed a valid statement to format');
     }
 
     /**
@@ -64,7 +64,7 @@ class StatementFormatter
         if ($this->_statement instanceof PDOStatement) {
             return $this->_statement->fetchAll(PDO::FETCH_NUM);
         }
-        throw new StatementException('You didn\'t passed a valid statement to format');
+        throw new StatementException('You did not passed a valid statement to format');
     }
 
     /**
@@ -81,7 +81,7 @@ class StatementFormatter
             }
             throw new StatementException('This class can not be used for fetching');
         }
-        throw new StatementException('You didn\'t passed a valid statement to format');
+        throw new StatementException('You did not passed a valid statement to format');
     }
 
     /**
@@ -97,7 +97,7 @@ class StatementFormatter
             }
             throw new StatementException('This class can not be used for fetching');
         }
-        throw new StatementException('You didn\'t passed a valid statement to format');
+        throw new StatementException('You did not passed a valid statement to format');
     }
 
     /**
