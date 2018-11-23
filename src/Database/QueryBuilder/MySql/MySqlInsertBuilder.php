@@ -31,7 +31,7 @@ class MySqlInsertBuilder extends InsertBuilder
                 $values .= $value . ', ';
             } else { // string
                 $value = trim($value);
-                if (strpos($value, ':') === 0 && \count(explode(' ', $value)) === 1){ // is flag
+                if (strpos($value, ':') === 0 && \count(explode(' ', $value)) === 1) { // is flag
                     $values .= $value . ', ';
                 } else {
                     $values .= "'" . $value . "', ";

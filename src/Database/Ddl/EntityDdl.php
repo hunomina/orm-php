@@ -12,6 +12,9 @@ use PDOStatement;
  */
 abstract class EntityDdl
 {
+    /** @var EntityReflexion $_entity_reflexion */
+    protected $_entity_reflexion;
+
     /** @var string $_table */
     protected $_table;
 
@@ -27,6 +30,7 @@ abstract class EntityDdl
      */
     public function __construct(EntityReflexion $entity)
     {
+        $this->_entity_reflexion = $entity;
         $this->_table = $entity->getTable();
     }
 

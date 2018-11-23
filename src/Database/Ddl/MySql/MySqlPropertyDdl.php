@@ -4,16 +4,19 @@ namespace hunomina\Orm\Database\Ddl\MySql;
 
 use hunomina\Orm\Database\Ddl\PropertyDdl;
 use hunomina\Orm\Entity\Entity;
+use hunomina\Orm\Entity\EntityException;
+use hunomina\Orm\Entity\EntityReflexion;
 
 class MySqlPropertyDdl extends PropertyDdl
 {
     /**
      * @return string
+     * @throws EntityException
      * Return database code to create the property column
      */
     public function createColumnDdl(): string
     {
-        if ($this->isForeignKey()){
+        if ($this->isPrimaryKey()) {
             $type = 'INT(11)';
         } else {
             $type = strtoupper($this->_type);
@@ -48,7 +51,8 @@ class MySqlPropertyDdl extends PropertyDdl
         } elseif ($this->_foreign_key) { // or foreign key, not both
             /** @var Entity $foreignEntity */
             $foreignEntity = $this->_foreign_key;
-            $ddl .= ', FOREIGN KEY (`' . $this->_name . '`) REFERENCES `' . $foreignEntity::getTable() . '`(`id`)';
+            $foreignKeyPrimaryKey = (new EntityReflexion($foreignEntity))->getPrimaryKey();
+            $ddl .= ', FOREIGN KEY (`' . $this->_name . '`) REFERENCES `' . $foreignEntity::getTable() . '`(`' . $foreignKeyPrimaryKey->getName() . '`)';
         }
 
         return $ddl;
@@ -60,7 +64,7 @@ class MySqlPropertyDdl extends PropertyDdl
      */
     public function alterTableUpdateColumnDdl(): string
     {
-        if ($this->isForeignKey()){
+        if ($this->isForeignKey()) {
             $type = 'INT(11)';
         } else {
             $type = strtoupper($this->_type);
@@ -99,7 +103,7 @@ class MySqlPropertyDdl extends PropertyDdl
      */
     public function alterTableCreateColumnDdl(): string
     {
-        if ($this->isForeignKey()){
+        if ($this->isForeignKey()) {
             $type = 'INT(11)';
         } else {
             $type = strtoupper($this->_type);

@@ -9,7 +9,7 @@ abstract class PropertyDdl
 {
     public const TYPE_ANNOTATION_REGEXP = '/^@DbType ([a-zA-Z_()\d]+)$/';
 
-    public const PRIMARY_KEY_ANNOTATION_REGEXP = '/^@PrimaryKey$/';
+    public const PRIMARY_KEY_ANNOTATION_REGEXP = '/^@Id$/';
 
     public const FOREIGN_KEY_ANNOTATION_REGEXP = '/^@ForeignKey ([a-zA-Z\d\\\_]+)$/';
 
@@ -77,125 +77,122 @@ abstract class PropertyDdl
         $annotations = $this->_annotations->getAnnotations();
 
         // get annotations value
+        [$collection, $type, $primaryKey, $foreignKey, $notNull, $default, $comments, $autoIncrement] = null;
         foreach ($annotations as $annotation) {
-            if (strpos($annotation, '@Collection') === 0) {
-                $collection = $annotation;
+            if (preg_match(self::COLLECTION_ANNOTATION_REGEXP, $annotation, $match)) {
+                $collection = $match[1];
             }
-            if (strpos($annotation, '@DbType') === 0) {
-                $type = $annotation;
+            if (preg_match(self::TYPE_ANNOTATION_REGEXP, $annotation, $match)) {
+                $type = $match[1];
             }
-            if (strpos($annotation, '@PrimaryKey') === 0) {
-                $primaryKey = $annotation;
+            if (preg_match(self::PRIMARY_KEY_ANNOTATION_REGEXP, $annotation)) {
+                $primaryKey = true;
             }
-            if (strpos($annotation, '@ForeignKey') === 0) {
-                $foreignKey = $annotation;
+            if (preg_match(self::FOREIGN_KEY_ANNOTATION_REGEXP, $annotation, $match)) {
+                $foreignKey = $match[1];
             }
-            if (strpos($annotation, '@NotNull') === 0) {
-                $notNull = $annotation;
+            if (preg_match(self::NOT_NULL_ANNOTATION_REGEXP, $annotation)) {
+                $notNull = true;
             }
-            if (strpos($annotation, '@Default') === 0) {
-                $default = $annotation;
+            if (preg_match(self::DEFAULT_ANNOTATION_REGEXP, $annotation, $match)) {
+                $default = $match[1];
             }
-            if (strpos($annotation, '@Comments') === 0) {
-                $comments = $annotation;
+            if (preg_match(self::COMMENTS_ANNOTATION_REGEXP, $annotation, $match)) {
+                $comments = $match[1];
             }
-            if (strpos($annotation, '@AutoIncrement') === 0) {
-                $autoIncrement = $annotation;
+            if (preg_match(self::AUTO_INCREMENT_ANNOTATION_REGEXP, $annotation)) {
+                $autoIncrement = true;
+            }
+        }
+
+        if ($primaryKey === true) {
+            $this->_primary_key = true;
+        }
+
+        if ($foreignKey !== null) {
+            if (class_exists($foreignKey)) {
+                if (is_subclass_of($foreignKey, Entity::class)) {
+                    $this->_foreign_key = $foreignKey;
+                } else {
+                    throw new DdlException('The foreign key class for the `' . $this->_name . '` property does not extend hunomina\Entity\Entity');
+                }
+            } else {
+                throw new DdlException('The foreign key class for the `' . $this->_name . '` property does not exist');
             }
         }
 
         // checked first because needed later for @DbType annotation
-        if (isset($collection)) {
-            if (preg_match(self::COLLECTION_ANNOTATION_REGEXP, $collection, $match)) {
-                $match = $match[1];
-                if (class_exists($match)) {
-                    if (is_subclass_of($match, Entity::class)) {
-                        $this->_collection = $match;
-                    } else {
-                        throw new DdlException('The collection class for the `' . $this->_name . '` property does not extend hunomina\Entity\Entity');
-                    }
+        if ($collection !== null) {
+            if (class_exists($collection)) {
+                if (is_subclass_of($collection, Entity::class)) {
+                    $this->_collection = $collection;
                 } else {
-                    throw new DdlException('The collection class for the `' . $this->_name . '` property does not exist');
+                    throw new DdlException('The collection class for the `' . $this->_name . '` property does not extend hunomina\Entity\Entity');
                 }
             } else {
-                throw new DdlException('The @Collection annotation is invalid for the `' . $this->_name . '` property');
+                throw new DdlException('The collection class for the `' . $this->_name . '` property does not exist');
             }
         }
 
-        if (!$this->isCollection()) {
-            if (isset($type)) {
-                if (preg_match(self::TYPE_ANNOTATION_REGEXP, $type, $match)) {
-                    $this->_type = $match[1];
-                } else {
-                    throw new DdlException('The @DbType annotation is invalid for the `' . $this->_name . '` property');
-                }
+        if (!$this->isPrimaryKey() && !$this->isForeignKey() && !$this->isCollection()) {
+            if ($type !== null) {
+                $this->_type = $type;
             } else {
-                throw new DdlException('The @DbType annotation has not been set for the `' . $this->_name . '` property');
+                throw new DdlException('The @DbType annotation has not been set or is invalid for the `' . $this->_name . '` property');
             }
         }
 
-        if (isset($primaryKey)) {
-            if (preg_match(self::PRIMARY_KEY_ANNOTATION_REGEXP, $primaryKey)) {
-                $this->_primary_key = true;
-            } else {
-                throw new DdlException('The @PrimaryKey annotation is invalid for the `' . $this->_name . '` property');
-            }
+        if ($notNull === true) {
+            $this->_not_null = true;
         }
 
-        if (isset($foreignKey)) {
-            if (preg_match(self::FOREIGN_KEY_ANNOTATION_REGEXP, $foreignKey, $match)) {
-                $match = $match[1];
-                if (class_exists($match)) {
-                    if (is_subclass_of($match, Entity::class)) {
-                        $this->_foreign_key = $match;
-                    } else {
-                        throw new DdlException('The foreign key class for the `' . $this->_name . '` property does not extend hunomina\Entity\Entity');
-                    }
-                } else {
-                    throw new DdlException('The foreign key class for the `' . $this->_name . '` property does not exist');
-                }
-            } else {
-                throw new DdlException('The @ForeignKey annotation is invalid for the `' . $this->_name . '` property');
+        if ($default !== null) {
+            if (preg_match(self::IS_INT_REGEXP, $default)) {
+                $default = (int)$default;
             }
+            $this->_default = $default;
         }
 
-        if (isset($notNull)) {
-            if (preg_match(self::NOT_NULL_ANNOTATION_REGEXP, $notNull)) {
-                $this->_not_null = true;
-            } else {
-                throw new DdlException('The @NotNull annotation is invalid for the `' . $this->_name . '` property');
-            }
+        if ($comments !== null) {
+            $this->_comments = $comments;
         }
 
-        if (isset($default)) {
-            if (preg_match(self::DEFAULT_ANNOTATION_REGEXP, $default, $match)) {
-                $match = $match[1];
-                if (preg_match(self::IS_INT_REGEXP, $match)) {
-                    $match = (int)$match;
-                }
-                $this->_default = $match;
-            } else {
-                throw new DdlException('The @Default annotation is invalid for the `' . $this->_name . '` property');
-            }
+        if ($autoIncrement === true) {
+            $this->_auto_increment = true;
         }
 
-        if (isset($comments)) {
-            if (preg_match(self::COMMENTS_ANNOTATION_REGEXP, $comments, $match)) {
-                $this->_comments = $match[1];
-            } else {
-                throw new DdlException('The @Comments annotation is invalid for the `' . $this->_name . '` property');
-            }
+        /**
+         * If the property is a primary key, it must be :
+         * int
+         * not null
+         * auto increment
+         * no default value
+         * not be a foreign key
+         * not be a collection
+         */
+        if ($this->isPrimaryKey()) {
+            $this->_type = 'INT(11)';
+            $this->_default = null;
+            $this->_not_null = true;
+            $this->_auto_increment = true;
+            $this->_foreign_key = null;
+            $this->_collection = null;
         }
 
-        if (isset($autoIncrement)) {
-            if (preg_match(self::AUTO_INCREMENT_ANNOTATION_REGEXP, $autoIncrement)) {
-                $this->_auto_increment = true;
-            } else {
-                throw new DdlException('The @AutoIncrement annotation is invalid for the `' . $this->_name . '` property');
-            }
+        /**
+         * If the property is a foreign key, it must be :
+         * int
+         * not a collection
+         */
+        if ($this->isForeignKey()) {
+            $this->_type = 'INT(11)';
+            $this->_collection = null;
         }
     }
 
+    /**
+     * @return string
+     */
     public function getName(): string
     {
         return $this->_name;
@@ -222,7 +219,7 @@ abstract class PropertyDdl
     /**
      * @return string
      */
-    public function getForeignKeyClass(): string
+    public function getForeignKeyClass(): ?string
     {
         return $this->_foreign_key;
     }
@@ -230,7 +227,7 @@ abstract class PropertyDdl
     /**
      * @return string
      */
-    public function getCollectionClass(): string
+    public function getCollectionClass(): ?string
     {
         return $this->_collection;
     }
@@ -243,6 +240,14 @@ abstract class PropertyDdl
     public function getValue(Entity $entity)
     {
         return $entity->{$this->_name};
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPrimaryKey(): bool
+    {
+        return $this->_primary_key;
     }
 
     /**

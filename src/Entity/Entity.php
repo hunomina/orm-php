@@ -5,13 +5,11 @@ namespace hunomina\Orm\Entity;
 abstract class Entity
 {
     /**
-     * @var int $id
-     * @PrimaryKey
-     * @AutoIncrement
-     * @DbType int(11)
-     * @Comments Primary key of the entity
+     * @return string
      */
-    public $id;
-
-    abstract public static function getTable(): string;
+    public static function getTable(): string
+    {
+        $explodedClass = explode('\\', __CLASS__);
+        return array_pop($explodedClass);
+    }
 }

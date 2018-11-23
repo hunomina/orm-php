@@ -33,10 +33,10 @@ class EntityTableGenerator
 
     /**
      * @param string $entity
-     * @return bool on success
+     * @return bool
      * @throws DdlException
-     * @throws GeneratorException
      * @throws EntityException
+     * @throws GeneratorException
      */
     public function generateEntityTable(string $entity): bool
     {

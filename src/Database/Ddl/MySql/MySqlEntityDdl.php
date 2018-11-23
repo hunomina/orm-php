@@ -6,6 +6,7 @@ use hunomina\Orm\Database\Ddl\DdlException;
 use hunomina\Orm\Database\Ddl\EntityDdl;
 use hunomina\Orm\Database\Ddl\PropertyDdl;
 use hunomina\Orm\Entity\Entity;
+use hunomina\Orm\Entity\EntityException;
 use hunomina\Orm\Entity\EntityReflexion;
 use PDO;
 use PDOStatement;
@@ -33,6 +34,7 @@ class MySqlEntityDdl extends EntityDdl
     /**
      * @return string
      * @throws DdlException
+     * @throws EntityException
      */
     public function createTableDdl(): string
     {
@@ -55,12 +57,14 @@ class MySqlEntityDdl extends EntityDdl
     /**
      * @return string
      * @throws DdlException
+     * @throws EntityException
      */
     public function updateTableDdl(): string
     {
         $ddl = '';
         $collections = [];
         foreach ($this->_properties_ddl as $property) {
+
             if (!$property->isCollection()) {
                 if (\in_array($property->getName(), $this->_current_columns, true)) {
                     $ddl .= 'ALTER TABLE `' . $this->_table . '` ' . $property->alterTableUpdateColumnDdl() . ';';
@@ -114,9 +118,14 @@ class MySqlEntityDdl extends EntityDdl
         return \count($statement->fetchAll(PDO::FETCH_ASSOC)) > 0;
     }
 
+    /**
+     * @return string
+     * @throws EntityException
+     */
     public function deleteEntityDdl(): string
     {
-        return 'DELETE FROM `' . $this->_table . '` WHERE id = :id';
+        $entityPrimaryKey = $this->_entity_reflexion->getPrimaryKey();
+        return 'DELETE FROM `' . $this->_table . '` WHERE `' . $entityPrimaryKey->getName() . '` = :id';
     }
 
     public function insertEntityDdl(): string
@@ -124,7 +133,7 @@ class MySqlEntityDdl extends EntityDdl
         $properties = [];
         foreach ($this->_properties_ddl as $property) {
             if (!$property->isCollection()) {
-                $properties[] = $property->getName();
+                $properties[] = $property;
             }
         }
 
@@ -133,9 +142,10 @@ class MySqlEntityDdl extends EntityDdl
         $columns = '';
         $flags = '';
 
+        /** @var PropertyDdl $property */
         foreach ($properties as $property) {
-            $columns .= '`' . $property . '`, ';
-            $flags .= ':' . $property . ', ';
+            $columns .= '`' . $property->getName() . '`, ';
+            $flags .= ':' . $property->getName() . ', ';
         }
 
         $columns = rtrim($columns, ', ');
@@ -148,6 +158,7 @@ class MySqlEntityDdl extends EntityDdl
 
     /**
      * @return string
+     * @throws DdlException
      * Return database code to update a specific entity
      * Must contain a specific flag :id to use with \PDO
      */
@@ -156,29 +167,43 @@ class MySqlEntityDdl extends EntityDdl
         $properties = [];
         foreach ($this->_properties_ddl as $property) {
             if (!$property->isCollection()) {
-                $properties[] = $property->getName();
+                $properties[] = $property;
             }
         }
 
         $ddl = 'UPDATE `' . $this->_table . '` SET ';
 
+        $primaryKey = null;
+
+        /** @var PropertyDdl $property */
         foreach ($properties as $property) {
-            if ($property !== 'id') {
-                $ddl .= '`' . $property . '` = :' . $property . ', ';
+            if (!$property->isPrimaryKey()) {
+                $ddl .= '`' . $property->getName() . '` = :' . $property->getName() . ', ';
+            } else {
+                if ($primaryKey instanceof PropertyDdl) {
+                    throw new DdlException('An entity can only have one primary key');
+                }
+                $primaryKey = $property;
             }
         }
 
-        $ddl = rtrim($ddl, ', ') . ' WHERE id = :id;';
+        if (!($primaryKey instanceof PropertyDdl)) {
+            throw new DdlException('An entity must have a primary key');
+        }
+
+        $ddl = rtrim($ddl, ', ') . ' WHERE ' . $primaryKey->getName() . ' = :' . $primaryKey->getName() . ';';
         return $ddl;
     }
 
     /**
      * @return string
+     * @throws EntityException
      * Return database code to check if an entity exist (need an :id flag to use with \PDO)
      */
     public function doesEntityExistDdl(): string
     {
-        return 'SELECT COUNT(*) as count FROM `' . $this->_table . '` WHERE id = :id';
+        $entityPrimaryKey = $this->_entity_reflexion->getPrimaryKey();
+        return 'SELECT COUNT(*) as count FROM `' . $this->_table . '` WHERE `' . $entityPrimaryKey->getName() . '` = :id';
     }
 
     /**
@@ -195,6 +220,7 @@ class MySqlEntityDdl extends EntityDdl
      * @param array $properties
      * @return string
      * @throws DdlException
+     * @throws EntityException
      */
     protected function createCollectionTablesIfNotExistDdl(array $properties): string
     {
@@ -203,13 +229,48 @@ class MySqlEntityDdl extends EntityDdl
             if ($property instanceof PropertyDdl && $property->isCollection()) {
 
                 $ddl .= 'CREATE TABLE IF NOT EXISTS `' . $this->_table . '_' . $property->getName() . '` (';
+
+                // get entity primary
+                $entityPrimaryKey = null;
+                foreach ($this->getPropertiesDdl() as $entityProperty) {
+                    if ($entityProperty->isPrimaryKey()) {
+                        if (!($entityPrimaryKey instanceof PropertyDdl)) {
+                            $entityPrimaryKey = $entityProperty;
+                        } else {
+                            throw new DdlException('The `' . $this->_entity_reflexion->getEntityClass() . '` entity can only have one primary key');
+                        }
+                    }
+                }
+
+                if (!($entityPrimaryKey instanceof PropertyDdl)) {
+                    throw new DdlException('The `' . $this->_entity_reflexion->getEntityClass() . '` entity must have a primary key');
+                }
+
+                // get collection primary key
                 /** @var Entity $collectionClass */
                 $collectionClass = $property->getCollectionClass();
-                $collectionTable = $collectionClass::getTable();
+                $collectionEntityDdl = new MySqlEntityDdl(new EntityReflexion($collectionClass));
+
+                $collectionTable = $collectionEntityDdl->_table;
+                $collectionPrimaryKey = null;
+
+                foreach ($collectionEntityDdl->getPropertiesDdl() as $collectionProperty) {
+                    if ($collectionProperty->isPrimaryKey()) {
+                        if (!($collectionPrimaryKey instanceof PropertyDdl)) {
+                            $collectionPrimaryKey = $collectionProperty;
+                        } else {
+                            throw new DdlException('The `' . $collectionClass . '` entity can only have one primary key');
+                        }
+                    }
+                }
+
+                if (!($collectionPrimaryKey instanceof PropertyDdl)) {
+                    throw new DdlException('The `' . $collectionClass . '` entity can only have one primary key');
+                }
 
                 $ddl .= '`id` INT(11) NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`), ';
-                $ddl .= '`' . $this->_table . '` INT(11) NOT NULL, FOREIGN KEY (`' . $this->_table . '`) REFERENCES `' . $this->_table . '`(`id`), ';
-                $ddl .= '`' . $collectionTable . '` INT(11) NOT NULL, FOREIGN KEY (`' . $collectionTable . '`) REFERENCES `' . $collectionTable . '`(`id`)';
+                $ddl .= '`' . $this->_table . '` INT(11) NOT NULL, FOREIGN KEY (`' . $this->_table . '`) REFERENCES `' . $this->_table . '`(`' . $entityPrimaryKey->getName() . '`), ';
+                $ddl .= '`' . $collectionTable . '` INT(11) NOT NULL, FOREIGN KEY (`' . $collectionTable . '`) REFERENCES `' . $collectionTable . '`(`' . $collectionPrimaryKey->getName() . '`)';
 
                 $ddl .= ');';
             } else {

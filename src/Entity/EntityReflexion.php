@@ -10,6 +10,9 @@ class EntityReflexion
     /** @var string $_table */
     private $_table;
 
+    /** @var string $_entity_class */
+    private $_entity_class;
+
     /** @var ReflectionProperty[] $properties */
     private $_properties;
 
@@ -30,6 +33,7 @@ class EntityReflexion
                 }
 
                 /** @var Entity $entity */
+                $this->_entity_class = $entity;
                 $this->_table = $entity::getTable();
                 $this->_properties = $reflexion->getProperties();
             } else {
@@ -59,6 +63,11 @@ class EntityReflexion
         return null;
     }
 
+    public function getEntityClass(): string
+    {
+        return $this->_entity_class;
+    }
+
     /**
      * @return string
      */
@@ -67,6 +76,9 @@ class EntityReflexion
         return $this->_table;
     }
 
+    /**
+     * @return array
+     */
     public function getProperties(): array
     {
         return $this->_properties;
@@ -130,5 +142,21 @@ class EntityReflexion
             }
         }
         return $foreignKeys;
+    }
+
+    /**
+     * @return ReflectionProperty
+     * @throws EntityException
+     */
+    public function getPrimaryKey(): ReflectionProperty
+    {
+        /** @var ReflectionProperty $property */
+        foreach ($this->getProperties() as $property) {
+            $annotations = new PropertyAnnotation($property);
+            if ($annotations->getAnnotation('Id')) {
+                return $property;
+            }
+        }
+        throw new EntityException('An entity must have a primary key');
     }
 }
