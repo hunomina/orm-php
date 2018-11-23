@@ -6,10 +6,11 @@ use hunomina\Orm\Entity\Entity;
 
 class Team extends Entity
 {
-    public static function getTable(): string
-    {
-        return 'team';
-    }
+    /**
+     * @var int $id
+     * @Id
+     */
+    public $id_team;
 
     /**
      * @var string $name
@@ -23,4 +24,9 @@ class Team extends Entity
      * @Collection hunomina\Orm\Tests\Entity\User
      */
     public $members;
+
+    public static function getTable(): string
+    {
+        return 'team';
+    }
 }

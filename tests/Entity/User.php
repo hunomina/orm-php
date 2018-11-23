@@ -7,6 +7,12 @@ use hunomina\Orm\Entity\Entity;
 class User extends Entity
 {
     /**
+     * @var int $id
+     * @Id
+     */
+    public $id_user;
+
+    /**
      * @var string $name
      * @DbType varchar(50)
      */

@@ -7,6 +7,13 @@ use hunomina\Orm\Entity\Entity;
 class Car extends Entity
 {
     /**
+     * @var int $id
+     * @Id
+     * @Comments Primary key of the entity
+     */
+    public $id;
+
+    /**
      * @var string $brand
      * @DbType varchar(30)
      * @Default null

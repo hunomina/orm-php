@@ -1,7 +1,8 @@
 <?php
 
-use hunomina\Orm\Database\Ddl\MySql\MySqlEntityDdl;
-use hunomina\Orm\Entity\EntityReflexion;
+use hunomina\Orm\Database\Ddl\DdlException;
+use hunomina\Orm\Database\Ddl\EntityDdlFactory;
+use hunomina\Orm\Entity\EntityException;
 use hunomina\Orm\Tests\Entity\Car;
 use hunomina\Orm\Tests\Entity\Team;
 use hunomina\Orm\Tests\Entity\User;
@@ -25,19 +26,19 @@ class DdlGenerationTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @throws \hunomina\Orm\Database\Ddl\DdlException
-     * @throws \hunomina\Orm\Entity\EntityException
+     * @throws DdlException
+     * @throws EntityException
      */
     public function testCreateDdl(): void
     {
-        $ddl = new MySqlEntityDdl(new EntityReflexion(User::class));
+        $ddl = EntityDdlFactory::get(User::class, 'mysql');
         $this->assertIsString($ddl->createTableDdl());
 
-        $ddl = new MySqlEntityDdl(new EntityReflexion(Car::class));
+        $ddl = EntityDdlFactory::get(Car::class, 'mysql');
         $this->assertIsString($ddl->createTableDdl());
         $this->assertIsString($ddl->updateTableDdl());
 
-        $ddl = new MySqlEntityDdl(new EntityReflexion(Team::class));
+        $ddl = EntityDdlFactory::get(Team::class, 'mysql');
         $this->assertIsString($ddl->createTableDdl());
         $this->assertIsString($ddl->updateTableDdl());
     }

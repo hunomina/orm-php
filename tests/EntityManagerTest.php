@@ -33,34 +33,84 @@ class EntityManagerTest extends \PHPUnit\Framework\TestCase
      * @throws EntityException
      * @throws EntityManagerException
      */
-    public function testInsertUpdateDelete(): void
+    public function testInsert(): void
     {
         $ddl = new MySqlEntityDdl(new EntityReflexion(User::class));
         $this->assertIsString($ddl->insertEntityDdl());
         $this->assertIsString($ddl->updateEntityDdl());
 
         $user1 = new User();
-        $user1->id = 1;
         $user1->name = 'me';
         $user1->email = 'me@localhost.here';
 
         $user2 = new User();
-        $user2->id = 2;
         $user2->name = 'you';
         $user2->email = 'you@localhost.here';
 
         $car = new Car();
-        $car->id = 1;
         $car->owner = $user1;
         $car->model = 'Punto';
         $car->brand = 'Fiat';
 
         $team = new Team();
-        $team->id = 1;
         $team->name = 'local';
         $team->members = [$user1, $user2];
 
         $em = new EntityManager($this->_pdo);
         $em->persist($user1)->persist($user2)->persist($car)->persist($team)->flush();
+    }
+
+    /**
+     * @throws DdlException
+     * @throws EntityException
+     * @throws EntityManagerException
+     */
+    public function testUpdate(): void
+    {
+        $ddl = new MySqlEntityDdl(new EntityReflexion(User::class));
+        $this->assertIsString($ddl->insertEntityDdl());
+        $this->assertIsString($ddl->updateEntityDdl());
+
+        $user1 = new User();
+        $user1->id_user = 1;
+        $user1->name = 'me2';
+        $user1->email = 'me@localhost.here';
+
+        $user2 = new User();
+        $user2->id_user = 2;
+        $user2->name = 'you2';
+        $user2->email = 'you@localhost.here';
+
+        $car = new Car();
+        $car->id = 1;
+        $car->owner = $user1;
+        $car->model = 'Punto2';
+        $car->brand = 'Fiat';
+
+        $team = new Team();
+        $team->id_team = 1;
+        $team->name = 'local2';
+        $team->members = [$user1, $user2];
+
+        $em = new EntityManager($this->_pdo);
+        $em->persist($user1)->persist($user2)->persist($car)->persist($team)->flush();
+    }
+
+    /**
+     * @throws DdlException
+     * @throws EntityException
+     * @throws EntityManagerException
+     */
+    public function testDelete(): void
+    {
+        $ddl = new MySqlEntityDdl(new EntityReflexion(User::class));
+        $this->assertIsString($ddl->insertEntityDdl());
+        $this->assertIsString($ddl->updateEntityDdl());
+
+        $team = new Team();
+        $team->id_team = 1;
+
+        $em = new EntityManager($this->_pdo);
+        $em->delete($team)->flush();
     }
 }
