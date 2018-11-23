@@ -56,7 +56,10 @@ abstract class EntityRepository
      */
     public function find(int $id, bool $load = true): ?Entity
     {
-        $query = $this->_query_builder->select()->where('id = :id')->execute();
+        $entityReflexion = new EntityReflexion($this->getEntityClass());
+        $entityPrimaryKey = $entityReflexion->getPrimaryKey();
+
+        $query = $this->_query_builder->select()->where($entityPrimaryKey->getName() . ' = :id')->execute();
 
         try {
             $statement = $this->_pdo->prepare($query);
@@ -151,7 +154,10 @@ abstract class EntityRepository
         /** @var Entity $class */
         foreach ($foreignKeys as $property => $class) {
 
-            $query = $this->_query_builder->select()->where('id = :id')->setTable($class::getTable());
+            $foreignKeyReflexion = new EntityReflexion($class);
+            $foreignKeyPrimaryKey = $foreignKeyReflexion->getPrimaryKey();
+
+            $query = $this->_query_builder->select()->where($foreignKeyPrimaryKey->getName() . ' = :id')->setTable($class::getTable());
 
             try {
                 $statement = $this->_pdo->prepare($query->execute());
@@ -183,6 +189,7 @@ abstract class EntityRepository
     final protected function loadCollections(Entity $entity): void
     {
         $reflexion = new EntityReflexion(\get_class($entity));
+        $entityPrimaryKey = $reflexion->getPrimaryKey();
         $collections = $reflexion->getCollections();
 
         /** @var Entity $class */
@@ -195,7 +202,7 @@ abstract class EntityRepository
 
             try {
                 $statement = $this->_pdo->prepare($query);
-                $statement->bindParam(':' . $entity::getTable(), $entity->id, PDO::PARAM_INT);
+                $statement->bindParam(':' . $entity::getTable(), $entity->{$entityPrimaryKey->getName()}, PDO::PARAM_INT);
                 $statement->execute();
             } catch (\PDOException $e) {
                 throw new EntityRepositoryException($e->getMessage());
@@ -211,8 +218,9 @@ abstract class EntityRepository
                 }
             }
 
+            $itemCollectionPrimaryKey = (new EntityReflexion($class))->getPrimaryKey();
             $query = $this->_query_builder->select()
-                ->where('id IN (' . implode(', ', $collectionIds) . ')')
+                ->where('`' . $itemCollectionPrimaryKey->getName() . '` IN (' . implode(', ', $collectionIds) . ')')
                 ->setTable($class::getTable())
                 ->execute();
 
