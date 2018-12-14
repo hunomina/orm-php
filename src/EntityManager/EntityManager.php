@@ -34,6 +34,12 @@ class EntityManager
     protected $_delete;
 
     /**
+     * @var bool $_transaction_mode
+     * Transaction mode enabled ? Otherwise auto commit mode is enabled
+     */
+    protected $_transaction_mode = false;
+
+    /**
      * EntityManager constructor.
      * @param \PDO $pdo
      * @param string $type
@@ -45,6 +51,49 @@ class EntityManager
         $this->_type = $type;
         $this->_add = new SplObjectStorage();
         $this->_delete = new SplObjectStorage();
+    }
+
+    /**
+     * @return EntityManager
+     * Enable transaction mode for $this->_pdo
+     */
+    public function beginTransaction(): EntityManager
+    {
+        $this->_pdo->beginTransaction();
+        $this->_transaction_mode = true;
+        return $this;
+    }
+
+    /**
+     * @return EntityManager
+     * @throws EntityManagerException
+     * Commit $this->_pdo
+     */
+    public function commitTransaction(): EntityManager
+    {
+        if (!$this->_transaction_mode){
+            throw new EntityManagerException('You can not commit, transaction mode is disabled');
+        }
+
+        $this->_pdo->commit();
+        $this->_transaction_mode = false;
+        return $this;
+    }
+
+    /**
+     * @return EntityManager
+     * @throws EntityManagerException
+     * Rollback $this->_pdo
+     */
+    public function rollbackTransaction(): EntityManager
+    {
+        if (!$this->_transaction_mode){
+            throw new EntityManagerException('You can not rollback, transaction mode is disabled');
+        }
+
+        $this->_pdo->rollBack();
+        $this->_transaction_mode = false;
+        return $this;
     }
 
     /**
