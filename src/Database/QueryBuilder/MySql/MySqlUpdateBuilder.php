@@ -21,6 +21,18 @@ class MySqlUpdateBuilder extends UpdateBuilder
 
         $query .= ' SET ';
         foreach ($this->_sets as $name => $value) {
+
+            if (\is_bool($value)) { // bool
+                $value = $value ? 'TRUE' : 'FALSE';
+            } elseif ($value === null) { // null
+                $value = 'NULL';
+            } elseif (\is_string($value)) { // string
+                $value = trim($value);
+                if (strpos($value, ':') !== 0 || substr_count($value, ' ') !== 0) { // value is not a flag
+                    $value = "'" . $value . "'";
+                }
+            }
+            // if value is an integer, no need to format
             $query .= '`' . $name . '` = ' . $value . ', ';
         }
         $query = rtrim($query, ', ');
