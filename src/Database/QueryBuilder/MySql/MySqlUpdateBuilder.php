@@ -11,7 +11,7 @@ class MySqlUpdateBuilder extends UpdateBuilder
      * @return string
      * @throws QueryBuilderException
      */
-    public function execute(): string
+    public function build(): string
     {
         $query = 'UPDATE `' . $this->_table . '`';
 

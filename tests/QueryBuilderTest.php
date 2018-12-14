@@ -24,7 +24,7 @@ class QueryBuilderTest extends \PHPUnit\Framework\TestCase
             ->setOffset(10)
             ->where('city = :city')
             ->where('country = :country')
-            ->execute();
+            ->build();
 
         $this->assertIsString($selectQuery);
     }
@@ -43,7 +43,7 @@ class QueryBuilderTest extends \PHPUnit\Framework\TestCase
             ->setColumn('country', 'France')
             ->setColumn('valid', true)
             ->setColumn('car', null)
-            ->execute();
+            ->build();
 
         $this->assertIsString($insertQuery);
     }
@@ -63,7 +63,7 @@ class QueryBuilderTest extends \PHPUnit\Framework\TestCase
             ->setLimit(10)
             ->setOffset(2)
             ->where('`city` = :city')
-            ->execute();
+            ->build();
 
         $this->assertIsString($updateQuery);
     }
@@ -82,7 +82,7 @@ class QueryBuilderTest extends \PHPUnit\Framework\TestCase
             ->setLimit(5)
             ->where('name LIKE :name')
             ->where('city = :city')
-            ->execute();
+            ->build();
 
         $this->assertIsString($deleteQuery);
     }

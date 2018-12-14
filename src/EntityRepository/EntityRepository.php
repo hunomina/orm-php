@@ -59,7 +59,7 @@ abstract class EntityRepository
         $entityReflexion = new EntityReflexion($this->getEntityClass());
         $entityPrimaryKey = $entityReflexion->getPrimaryKey();
 
-        $query = $this->_query_builder->select()->where($entityPrimaryKey->getName() . ' = :id')->execute();
+        $query = $this->_query_builder->select()->where($entityPrimaryKey->getName() . ' = :id')->build();
 
         try {
             $statement = $this->_pdo->prepare($query);
@@ -90,7 +90,7 @@ abstract class EntityRepository
      */
     public function findAll(bool $load = true): array
     {
-        $query = $this->_query_builder->select()->execute();
+        $query = $this->_query_builder->select()->build();
 
         try {
             $statement = $this->_pdo->query($query);
@@ -160,7 +160,7 @@ abstract class EntityRepository
             $query = $this->_query_builder->select()->where($foreignKeyPrimaryKey->getName() . ' = :id')->setTable($class::getTable());
 
             try {
-                $statement = $this->_pdo->prepare($query->execute());
+                $statement = $this->_pdo->prepare($query->build());
                 $statement->bindParam(':id', $entity->{$property}, PDO::PARAM_INT);
                 $statement->execute();
             } catch (\PDOException $e) {
@@ -198,7 +198,7 @@ abstract class EntityRepository
             $query = $this->_query_builder->select()
                 ->where($entity::getTable() . ' = :' . $entity::getTable())
                 ->setTable($entity::getTable() . '_' . $property)
-                ->execute();
+                ->build();
 
             try {
                 $statement = $this->_pdo->prepare($query);
@@ -222,7 +222,7 @@ abstract class EntityRepository
             $query = $this->_query_builder->select()
                 ->where('`' . $itemCollectionPrimaryKey->getName() . '` IN (' . implode(', ', $collectionIds) . ')')
                 ->setTable($class::getTable())
-                ->execute();
+                ->build();
 
             try {
                 $statement = $this->_pdo->query($query);

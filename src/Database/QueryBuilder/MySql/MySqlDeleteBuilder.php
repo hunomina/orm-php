@@ -6,7 +6,7 @@ use hunomina\Orm\Database\QueryBuilder\BuilderInterface\DeleteBuilder;
 
 class MySqlDeleteBuilder extends DeleteBuilder
 {
-    public function execute(): string
+    public function build(): string
     {
         $query = 'DELETE FROM `' . $this->_table . '`';
 

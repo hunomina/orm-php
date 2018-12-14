@@ -11,7 +11,7 @@ class MySqlInsertBuilder extends InsertBuilder
      * @return string
      * @throws QueryBuilderException
      */
-    public function execute(): string
+    public function build(): string
     {
         $query = 'INSERT INTO `' . $this->_table . '`';
 

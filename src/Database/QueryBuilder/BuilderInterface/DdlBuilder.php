@@ -24,5 +24,5 @@ abstract class DdlBuilder
         return $this;
     }
 
-    abstract public function execute(): string;
+    abstract public function build(): string;
 }

@@ -6,7 +6,7 @@ use hunomina\Orm\Database\QueryBuilder\BuilderInterface\SelectBuilder;
 
 class MySqlSelectBuilder extends SelectBuilder
 {
-    public function execute(): string
+    public function build(): string
     {
         $query = 'SELECT ';
 
