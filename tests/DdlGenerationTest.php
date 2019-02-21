@@ -17,7 +17,9 @@ class DdlGenerationTest extends \PHPUnit\Framework\TestCase
     public function __construct(?string $name = null, array $data = [], string $dataName = '')
     {
         parent::__construct($name, $data, $dataName);
-        $this->_pdo = new PDO('mysql:host=localhost;dbname=test', 'root', 'root');
+        $this->_pdo = new PDO('mysql:host=localhost;dbname=travis', 'travis', '');
+        $this->_pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $this->_pdo->exec('SET NAMES utf8');
     }
 
     public function __destruct()
