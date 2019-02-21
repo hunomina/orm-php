@@ -1,0 +1,17 @@
+<phpunit bootstrap="vendor/autoload.php">
+    <testsuites>
+        <testsuite name="ddl_generation">
+            <file>tests/DdlGenerationTest.php</file>
+        </testsuite>
+        <testsuite name="table_generation">
+            <file>tests/TableGeneratorTest.php</file>
+        </testsuite>
+        <testsuite name="query_build">
+            <file>tests/QueryBuilderTest.php</file>
+            <file>tests/EntityManagerTest.php</file>
+        </testsuite>
+        <testsuite name="entity_repository">
+            <file>tests/EntityRepositoryTest.php</file>
+        </testsuite>
+    </testsuites>
+</phpunit>
