@@ -11,6 +11,7 @@ use hunomina\Orm\Entity\Entity;
 use hunomina\Orm\Entity\EntityException;
 use hunomina\Orm\Entity\EntityReflexion;
 use PDO;
+use ReflectionProperty;
 
 abstract class EntityRepository
 {
@@ -59,7 +60,7 @@ abstract class EntityRepository
         $entityReflexion = new EntityReflexion($this->getEntityClass());
         $entityPrimaryKey = $entityReflexion->getPrimaryKey();
 
-        $query = $this->_query_builder->select()->where($entityPrimaryKey->getName() . ' = :id')->build();
+        $query = $this->_query_builder->select()->where('`' . $entityPrimaryKey->getName() . '` = :id')->build();
 
         try {
             $statement = $this->_pdo->prepare($query);
@@ -70,6 +71,7 @@ abstract class EntityRepository
         }
 
         $results = $this->_statement_formatter->format($statement)->fetchObject($this->getEntityClass());
+
         if (\count($results) > 0) {
             $entity = $results[0];
             if ($load) {
@@ -148,20 +150,30 @@ abstract class EntityRepository
      */
     final protected function loadForeignKeys(Entity $entity): void
     {
-        $reflexion = new EntityReflexion(\get_class($entity));
+        $entityClass = \get_class($entity);
+        $reflexion = new EntityReflexion($entityClass);
         $foreignKeys = $reflexion->getForeignKeys();
 
         /** @var Entity $class */
         foreach ($foreignKeys as $property => $class) {
 
-            $foreignKeyReflexion = new EntityReflexion($class);
-            $foreignKeyPrimaryKey = $foreignKeyReflexion->getPrimaryKey();
+            $foreignKeyReflexion = $reflexion->getProperty($property);
 
-            $query = $this->_query_builder->select()->where($foreignKeyPrimaryKey->getName() . ' = :id')->setTable($class::getTable());
+            if (!($foreignKeyReflexion instanceof ReflectionProperty)) {
+                throw new EntityException('The `' . $entityClass . '::' . $property . '` property does not exist');
+            }
+
+            $foreignKeyReflexion->setAccessible(true);
+            $foreignKeyValue = $foreignKeyReflexion->getValue($entity);
+
+            $foreignKeyClassReflexion = new EntityReflexion($class);
+            $foreignKeyClassPrimaryKey = $foreignKeyClassReflexion->getPrimaryKey();
+
+            $query = $this->_query_builder->select()->where($foreignKeyClassPrimaryKey->getName() . ' = :id')->setTable($class::getTable());
 
             try {
                 $statement = $this->_pdo->prepare($query->build());
-                $statement->bindParam(':id', $entity->{$property}, PDO::PARAM_INT);
+                $statement->bindParam(':id', $foreignKeyValue, PDO::PARAM_INT);
                 $statement->execute();
             } catch (\PDOException $e) {
                 throw new EntityRepositoryException($e->getMessage());
@@ -171,11 +183,12 @@ abstract class EntityRepository
             if (\count($results) > 0) {
                 $foreignKey = $results[0];
                 $this->load($foreignKey);
-                $entity->{$property} = $foreignKey;
+                $foreignKeyReflexion->setValue($entity, $foreignKey);
             } else {
-                throw new EntityRepositoryException('The `' . $class . '` entity with id=' . $entity->{$property} . ' has not been found');
-                // or null
+                throw new EntityRepositoryException('The `' . $class . '` entity with id=' . $foreignKeyValue . ' has not been found');
             }
+
+            $foreignKeyReflexion->setAccessible(false);
         }
     }
 
@@ -188,9 +201,14 @@ abstract class EntityRepository
      */
     final protected function loadCollections(Entity $entity): void
     {
-        $reflexion = new EntityReflexion(\get_class($entity));
+        $entityClass = \get_class($entity);
+        $reflexion = new EntityReflexion($entity);
         $entityPrimaryKey = $reflexion->getPrimaryKey();
         $collections = $reflexion->getCollections();
+
+        $entityPrimaryKey->setAccessible(true);
+        $entityPrimaryKeyValue = $entityPrimaryKey->getValue($entity);
+        $entityPrimaryKey->setAccessible(false);
 
         /** @var Entity $class */
         foreach ($collections as $property => $class) {
@@ -202,7 +220,7 @@ abstract class EntityRepository
 
             try {
                 $statement = $this->_pdo->prepare($query);
-                $statement->bindParam(':' . $entity::getTable(), $entity->{$entityPrimaryKey->getName()}, PDO::PARAM_INT);
+                $statement->bindParam(':' . $entity::getTable(), $entityPrimaryKeyValue, PDO::PARAM_INT);
                 $statement->execute();
             } catch (\PDOException $e) {
                 throw new EntityRepositoryException($e->getMessage());
@@ -218,20 +236,31 @@ abstract class EntityRepository
                 }
             }
 
-            $itemCollectionPrimaryKey = (new EntityReflexion($class))->getPrimaryKey();
-            $query = $this->_query_builder->select()
-                ->where('`' . $itemCollectionPrimaryKey->getName() . '` IN (' . implode(', ', $collectionIds) . ')')
-                ->setTable($class::getTable())
-                ->build();
+            if (count($collectionIds) > 0) {
+                $itemCollectionPrimaryKey = (new EntityReflexion($class))->getPrimaryKey();
+                $query = $this->_query_builder->select()
+                    ->where('`' . $itemCollectionPrimaryKey->getName() . '` IN (' . implode(', ', $collectionIds) . ')')
+                    ->setTable($class::getTable())
+                    ->build();
 
-            try {
-                $statement = $this->_pdo->query($query);
-            } catch (\PDOException $e) {
-                throw new EntityRepositoryException($e->getMessage());
+                try {
+                    $statement = $this->_pdo->query($query);
+                } catch (\PDOException $e) {
+                    throw new EntityRepositoryException($e->getMessage());
+                }
+
+                $results = $this->_statement_formatter->format($statement)->fetchObject($class);
+
+                $propertyReflexion = $reflexion->getProperty($property);
+
+                if ($propertyReflexion instanceof ReflectionProperty) {
+                    $propertyReflexion->setAccessible(true);
+                    $propertyReflexion->setValue($entity, $results);
+                    $propertyReflexion->setAccessible(false);
+                } else {
+                    throw new EntityException('The `' . $entityClass . '::' . $property . '` property does not exist');
+                }
             }
-
-            $results = $this->_statement_formatter->format($statement)->fetchObject($class);
-            $entity->{$property} = $results;
         }
     }
 }

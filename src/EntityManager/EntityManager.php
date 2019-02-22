@@ -11,6 +11,7 @@ use hunomina\Orm\Entity\EntityReflexion;
 use PDO;
 use PDOException;
 use PDOStatement;
+use ReflectionProperty;
 use SplObjectStorage;
 
 class EntityManager
@@ -71,7 +72,7 @@ class EntityManager
      */
     public function commitTransaction(): EntityManager
     {
-        if (!$this->_transaction_mode){
+        if (!$this->_transaction_mode) {
             throw new EntityManagerException('You can not commit, transaction mode is disabled');
         }
 
@@ -87,7 +88,7 @@ class EntityManager
      */
     public function rollbackTransaction(): EntityManager
     {
-        if (!$this->_transaction_mode){
+        if (!$this->_transaction_mode) {
             throw new EntityManagerException('You can not rollback, transaction mode is disabled');
         }
 
@@ -162,9 +163,21 @@ class EntityManager
 
         foreach ($this->_delete as $entity) {
             if ($entity instanceof Entity) {
-                $entityDdl = EntityDdlFactory::get(\get_class($entity), $this->_type);
+
+                $entityClass = \get_class($entity);
+                $this->emptyCollections($entity);
+
+                $entityReflexion = new EntityReflexion($entityClass);
+                $entityPrimaryKey = $entityReflexion->getPrimaryKey();
+
+                $entityPrimaryKey->setAccessible(true);
+                $primaryKeyValue = $entityPrimaryKey->getValue($entity);
+                $entityPrimaryKey->setAccessible(false);
+
+                $entityDdl = EntityDdlFactory::get($entityClass, $this->_type);
                 $statement = $this->_pdo->prepare($entityDdl->deleteEntityDdl());
-                $statement->bindParam(':id', $entity->id, PDO::PARAM_INT);
+                $statement->bindParam(':id', $primaryKeyValue, PDO::PARAM_INT);
+
                 try {
                     $statement->execute();
                 } catch (PDOException $e) {
@@ -188,13 +201,19 @@ class EntityManager
     private function entityAlreadyExist(Entity $entity): bool
     {
         $entityClass = \get_class($entity);
-        $entityPrimaryKey = (new EntityReflexion($entityClass))->getPrimaryKey();
 
-        if ($entity->{$entityPrimaryKey->getName()} !== null) {
+        $entityReflexion = new EntityReflexion($entityClass);
+        $entityPrimaryKey = $entityReflexion->getPrimaryKey();
+
+        $entityPrimaryKey->setAccessible(true);
+        $primaryKeyValue = $entityPrimaryKey->getValue($entity);
+        $entityPrimaryKey->setAccessible(false);
+
+        if ($primaryKeyValue !== null) {
+
             $entityDdl = EntityDdlFactory::get($entityClass, $this->_type);
-
             $statement = $this->_pdo->prepare($entityDdl->doesEntityExistDdl());
-            $statement->bindParam(':id', $entity->{$entityPrimaryKey->getName()}, \PDO::PARAM_INT);
+            $statement->bindParam(':id', $primaryKeyValue, \PDO::PARAM_INT);
 
             try {
                 $statement->execute();
@@ -218,15 +237,32 @@ class EntityManager
     private function saveCollections(Entity $entity, array $collections): void
     {
         $entityClass = \get_class($entity);
-        $entityPrimaryKey = (new EntityReflexion($entityClass))->getPrimaryKey();
+
+        $entityReflexion = new EntityReflexion($entityClass);
+        $entityPrimaryKey = $entityReflexion->getPrimaryKey();
+
+        $entityPrimaryKey->setAccessible(true);
+        $primaryKeyValue = $entityPrimaryKey->getValue($entity);
+        $entityPrimaryKey->setAccessible(false);
+
         $entityDdl = EntityDdlFactory::get($entityClass, $this->_type);
 
+        /** @var PropertyDdl $property */
         foreach ($collections as $property) { // foreach collection property
-
             if ($property->isCollection()) {
 
                 $this->emptyCollection($entity, $property);
-                $items = $entity->{$property->getName()};
+                $collectionPropertyReflexion = $entityReflexion->getProperty($property->getName());
+
+                if (!($collectionPropertyReflexion instanceof ReflectionProperty)) {
+                    throw new EntityException('The `' . $entityClass . '::' . $property->getName() . '` property does not exist');
+                }
+
+                $collectionPropertyReflexion->setAccessible(true);
+                $collectionPropertyValue = $collectionPropertyReflexion->getValue($entity);
+                $collectionPropertyReflexion->setAccessible(false);
+
+                $items = $collectionPropertyValue;
                 $statement = null;
 
                 foreach ($items as $item) { // foreach item of the collection
@@ -239,8 +275,12 @@ class EntityManager
                         $this->addEntity($item); // need to store the child entity first
                         $itemPrimaryKey = (new EntityReflexion(\get_class($item)))->getPrimaryKey();
 
-                        $statement->bindParam(':first_collection_item_id', $entity->{$entityPrimaryKey->getName()}, PDO::PARAM_INT);
-                        $statement->bindParam(':second_collection_item_id', $item->{$itemPrimaryKey->getName()}, PDO::PARAM_INT);
+                        $itemPrimaryKey->setAccessible(true);
+                        $itemPrimaryKeyValue = $itemPrimaryKey->getValue($item);
+                        $itemPrimaryKey->setAccessible(false);
+
+                        $statement->bindParam(':first_collection_item_id', $primaryKeyValue, PDO::PARAM_INT);
+                        $statement->bindParam(':second_collection_item_id', $itemPrimaryKeyValue, PDO::PARAM_INT);
 
                         try {
                             $statement->execute();
@@ -251,6 +291,24 @@ class EntityManager
                 }
             } else {
                 throw new EntityManagerException('The `' . $property->getName() . '` of the `' . \get_class($entity) . '` is not a collection');
+            }
+        }
+    }
+
+    /**
+     * @param Entity $entity
+     * @throws DdlException
+     * @throws EntityException
+     * @throws EntityManagerException
+     */
+    public function emptyCollections(Entity $entity): void
+    {
+        $entityDdl = EntityDdlFactory::get(\get_class($entity), $this->_type);
+        $propertiesDdl = $entityDdl->getPropertiesDdl();
+
+        foreach ($propertiesDdl as $property) {
+            if ($property->isCollection()) {
+                $this->emptyCollection($entity, $property);
             }
         }
     }
@@ -269,8 +327,13 @@ class EntityManager
         $entityDdl = EntityDdlFactory::get($entityClass, $this->_type);
 
         if ($property->isCollection()) {
+
+            $entityPrimaryKey->setAccessible(true);
+            $primaryKeyValue = $entityPrimaryKey->getValue($entity);
+            $entityPrimaryKey->setAccessible(false);
+
             $statement = $this->_pdo->prepare($entityDdl->emptyCollectionDdl($entity, $property));
-            $statement->bindParam(':entity_id', $entity->{$entityPrimaryKey->getName()}, PDO::PARAM_INT);
+            $statement->bindParam(':entity_id', $primaryKeyValue, PDO::PARAM_INT);
             try {
                 $statement->execute();
             } catch (PDOException $e) {
@@ -310,15 +373,25 @@ class EntityManager
 
             $name = $property->getName();
             if ($property->isForeignKey()) {
+
                 $foreignKeyEntity = $property->getValue($entity);
+
                 $foreignKeyPrimaryKey = (new EntityReflexion(\get_class($foreignKeyEntity)))->getPrimaryKey();
-                $value = (int)$this->addEntity($foreignKeyEntity)->{$foreignKeyPrimaryKey->getName()};
+                $foreignKeyEntity = $this->addEntity($foreignKeyEntity);
+
+                $foreignKeyPrimaryKey->setAccessible(true);
+                $foreignKeyPrimaryKeyValue = $foreignKeyPrimaryKey->getValue($foreignKeyEntity);
+                $foreignKeyPrimaryKey->setAccessible(false);
+
+                $value = (int)$foreignKeyPrimaryKeyValue;
+
             } elseif ($property->isCollection()) {
                 $collectionProperties[] = $property;
                 continue;
             } else {
                 $value = $property->getValue($entity);
             }
+
             $properties[$name] = $value;
         }
 
@@ -336,7 +409,9 @@ class EntityManager
         }
 
         if ($create) {
-            $entity->{$entityPrimaryKey->getName()} = (int)$this->_pdo->lastInsertId();
+            $entityPrimaryKey->setAccessible(true);
+            $entityPrimaryKey->setValue($entity, (int)$this->_pdo->lastInsertId());
+            $entityPrimaryKey->setAccessible(false);
         }
 
         // collection need to be store after or the mother entity for foreign key to work
