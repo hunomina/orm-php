@@ -7,9 +7,5 @@ abstract class Entity
     /**
      * @return string
      */
-    public static function getTable(): string
-    {
-        $explodedClass = explode('\\', __CLASS__);
-        return array_pop($explodedClass);
-    }
+    abstract public static function getTable(): string;
 }
