@@ -25,8 +25,11 @@ class User extends Entity
      */
     public $email;
 
+    /**
+     * @return string
+     */
     public static function getTable(): string
     {
-        return 'user';
+        return 'users';
     }
 }

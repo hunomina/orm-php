@@ -51,7 +51,6 @@ class EntityManagerTransactionTest extends PHPUnit\Framework\TestCase
         $userRepo = new UserRepository($this->_pdo, 'mysql');
         $found = $userRepo->findByEmail('commit@test.com');
         $this->assertInstanceOf(User::class, $found);
-
     }
 
     /**

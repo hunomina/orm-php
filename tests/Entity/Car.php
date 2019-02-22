@@ -11,14 +11,14 @@ class Car extends Entity
      * @Id
      * @Comments Primary key of the entity
      */
-    public $id;
+    private $id;
 
     /**
      * @var string $brand
      * @DbType varchar(30)
      * @Default null
      */
-    public $brand;
+    private $brand;
 
     /**
      * @var string $model
@@ -26,7 +26,7 @@ class Car extends Entity
      * @Default ok
      * @NotNull
      */
-    public $model;
+    private $model;
 
     /**
      * @var User $owner
@@ -34,10 +34,74 @@ class Car extends Entity
      * @NotNull
      * @ForeignKey hunomina\Orm\Tests\Entity\User
      */
-    public $owner;
+    private $owner;
 
     public static function getTable(): string
     {
-        return 'car';
+        return 'cars';
+    }
+
+    /**
+     * @return int
+     */
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    /**
+     * @param int $id
+     */
+    public function setId(int $id): void
+    {
+        $this->id = $id;
+    }
+
+    /**
+     * @return string
+     */
+    public function getBrand(): string
+    {
+        return $this->brand;
+    }
+
+    /**
+     * @param string $brand
+     */
+    public function setBrand(string $brand): void
+    {
+        $this->brand = $brand;
+    }
+
+    /**
+     * @return string
+     */
+    public function getModel(): string
+    {
+        return $this->model;
+    }
+
+    /**
+     * @param string $model
+     */
+    public function setModel(string $model): void
+    {
+        $this->model = $model;
+    }
+
+    /**
+     * @return User
+     */
+    public function getOwner(): User
+    {
+        return $this->owner;
+    }
+
+    /**
+     * @param User $owner
+     */
+    public function setOwner(User $owner): void
+    {
+        $this->owner = $owner;
     }
 }

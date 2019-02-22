@@ -50,16 +50,20 @@ class EntityManagerTest extends \PHPUnit\Framework\TestCase
         $user2->email = 'you@localhost.here';
 
         $car = new Car();
-        $car->owner = $user1;
-        $car->model = 'Punto';
-        $car->brand = 'Fiat';
+        $car->setOwner($user1);
+        $car->setModel('Punto');
+        $car->setBrand('Fiat');
 
-        $team = new Team();
-        $team->name = 'local';
-        $team->members = [$user1, $user2];
+        $team1 = new Team();
+        $team1->setName('local1');
+        $team1->setMembers([$user1, $user2]);
+
+        $team2 = new Team();
+        $team2->setName('local2');
+        $team2->setMembers([$user1, $user2]);
 
         $em = new EntityManager($this->_pdo);
-        $em->persist($user1)->persist($user2)->persist($car)->persist($team)->flush();
+        $em->persist($user1)->persist($user2)->persist($car)->persist($team1)->persist($team2)->flush();
     }
 
     /**
@@ -75,24 +79,25 @@ class EntityManagerTest extends \PHPUnit\Framework\TestCase
 
         $user1 = new User();
         $user1->id_user = 1;
-        $user1->name = 'me2';
+        $user1->name = 'me2'; // change name
         $user1->email = 'me@localhost.here';
 
+        // try on same class a second time
         $user2 = new User();
         $user2->id_user = 2;
-        $user2->name = 'you2';
+        $user2->name = 'you2'; // change name
         $user2->email = 'you@localhost.here';
 
         $car = new Car();
-        $car->id = 1;
-        $car->owner = $user1;
-        $car->model = 'Punto2';
-        $car->brand = 'Fiat';
+        $car->setId(1);
+        $car->setOwner($user1);
+        $car->setModel('Punto2'); // change name
+        $car->setBrand('Fiat');
 
         $team = new Team();
-        $team->id_team = 1;
-        $team->name = 'local2';
-        $team->members = [$user1, $user2];
+        $team->setId(1);
+        $team->setName('local1renamed'); // change the name
+        $team->setMembers([$user1]); // update collection
 
         $em = new EntityManager($this->_pdo);
         $em->persist($user1)->persist($user2)->persist($car)->persist($team)->flush();
@@ -110,7 +115,7 @@ class EntityManagerTest extends \PHPUnit\Framework\TestCase
         $this->assertIsString($ddl->updateEntityDdl());
 
         $team = new Team();
-        $team->id_team = 1;
+        $team->setId(2);
 
         $em = new EntityManager($this->_pdo);
         $em->delete($team)->flush();

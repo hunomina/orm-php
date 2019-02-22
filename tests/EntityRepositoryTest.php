@@ -69,7 +69,7 @@ class EntityRepositoryTest extends \PHPUnit\Framework\TestCase
         /** @var Car $car */
         $car = $carRepo->find(1);
         $this->assertInstanceOf(Car::class, $car);
-        $this->assertInstanceOf(User::class, $car->owner);
+        $this->assertInstanceOf(User::class, $car->getOwner());
     }
 
     /**
@@ -83,8 +83,9 @@ class EntityRepositoryTest extends \PHPUnit\Framework\TestCase
         $carRepo = new CarRepository($this->_pdo, 'mysql');
         $cars = $carRepo->findAll();
         $this->assertContainsOnlyInstancesOf(Car::class, $cars);
+        /** @var Car $car */
         foreach ($cars as $car) {
-            $this->assertInstanceOf(User::class, $car->owner);
+            $this->assertInstanceOf(User::class, $car->getOwner());
         }
     }
 
@@ -100,7 +101,7 @@ class EntityRepositoryTest extends \PHPUnit\Framework\TestCase
         /** @var Team $team */
         $team = $teamRepo->find(1);
         $this->assertInstanceOf(Team::class, $team);
-        $this->assertContainsOnlyInstancesOf(User::class, $team->members);
+        $this->assertContainsOnlyInstancesOf(User::class, $team->getMembers());
     }
 
     /**
@@ -116,7 +117,7 @@ class EntityRepositoryTest extends \PHPUnit\Framework\TestCase
         $this->assertContainsOnlyInstancesOf(Team::class, $teams);
         /** @var Team $team */
         foreach ($teams as $team) {
-            $this->assertContainsOnlyInstancesOf(User::class, $team->members);
+            $this->assertContainsOnlyInstancesOf(User::class, $team->getMembers());
         }
     }
 }

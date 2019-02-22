@@ -8,7 +8,10 @@
         </testsuite>
         <testsuite name="query_build">
             <file>tests/QueryBuilderTest.php</file>
+        </testsuite>
+        <testsuite name="entity_manager">
             <file>tests/EntityManagerTest.php</file>
+            <file>tests/EntityManagerTransactionTest.php</file>
         </testsuite>
         <testsuite name="entity_repository">
             <file>tests/EntityRepositoryTest.php</file>
