@@ -202,7 +202,7 @@ abstract class EntityRepository
     final protected function loadCollections(Entity $entity): void
     {
         $entityClass = \get_class($entity);
-        $reflexion = new EntityReflexion($entity);
+        $reflexion = new EntityReflexion($entityClass);
         $entityPrimaryKey = $reflexion->getPrimaryKey();
         $collections = $reflexion->getCollections();
 
