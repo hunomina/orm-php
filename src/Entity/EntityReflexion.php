@@ -3,6 +3,7 @@
 namespace hunomina\Orm\Entity;
 
 use hunomina\Orm\Database\Ddl\PropertyDdl;
+use ReflectionClass;
 use ReflectionProperty;
 
 class EntityReflexion
@@ -16,6 +17,9 @@ class EntityReflexion
     /** @var ReflectionProperty[] $properties */
     private $_properties;
 
+    /** @var ReflectionClass $_reflexion */
+    private $_reflexion;
+
     /**
      * EntityReflexion constructor.
      * @param string $entity
@@ -27,7 +31,7 @@ class EntityReflexion
             if (is_subclass_of($entity, Entity::class)) {
 
                 try {
-                    $reflexion = new \ReflectionClass($entity);
+                    $reflexion = new ReflectionClass($entity);
                 } catch (\ReflectionException $e) {
                     throw new EntityException($e->getMessage());
                 }
@@ -35,6 +39,7 @@ class EntityReflexion
                 /** @var Entity $entity */
                 $this->_entity_class = $entity;
                 $this->_table = $entity::getTable();
+                $this->_reflexion = $reflexion;
                 $this->_properties = $reflexion->getProperties();
             } else {
                 throw new EntityException("The class '" . $entity . "' does not extend '" . Entity::class . "'");
@@ -77,11 +82,34 @@ class EntityReflexion
     }
 
     /**
-     * @return array
+     * @return ReflectionProperty[]
      */
     public function getProperties(): array
     {
         return $this->_properties;
+    }
+
+    /**
+     * @param string $name
+     * @return ReflectionProperty
+     */
+    public function getProperty(string $name): ?ReflectionProperty
+    {
+        foreach ($this->_properties as $property){
+            if ($property->getName() === $name){
+                return $property;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return ReflectionClass
+     */
+    public function getReflexion(): ReflectionClass
+    {
+        return $this->_reflexion;
     }
 
     /**
@@ -115,7 +143,7 @@ class EntityReflexion
     }
 
     /**
-     * @return string[]
+     * @return ReflectionProperty[]
      * @throws EntityException
      */
     public function getForeignKeys(): array
