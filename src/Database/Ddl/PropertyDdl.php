@@ -4,6 +4,7 @@ namespace hunomina\Orm\Database\Ddl;
 
 use hunomina\Orm\Entity\Entity;
 use hunomina\Orm\Entity\PropertyAnnotation;
+use ReflectionProperty;
 
 abstract class PropertyDdl
 {
@@ -55,14 +56,18 @@ abstract class PropertyDdl
     /** @var string $_comments */
     protected $_comments;
 
+    /** @var ReflectionProperty $_reflexion */
+    protected $_reflexion;
+
     /**
      * PropertyDdl constructor.
-     * @param \ReflectionProperty $property
+     * @param ReflectionProperty $property
      * @throws DdlException
      */
-    public function __construct(\ReflectionProperty $property)
+    public function __construct(ReflectionProperty $property)
     {
         $this->_name = $property->getName();
+        $this->_reflexion = $property;
         $this->_annotations = new PropertyAnnotation($property);
 
         $this->fetchAnnotations();
@@ -239,7 +244,11 @@ abstract class PropertyDdl
      */
     public function getValue(Entity $entity)
     {
-        return $entity->{$this->_name};
+        $this->_reflexion->setAccessible(true);
+        $value = $this->_reflexion->getValue($entity);
+        $this->_reflexion->setAccessible(false);
+
+        return $value;
     }
 
     /**
